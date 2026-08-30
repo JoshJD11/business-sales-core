@@ -12,10 +12,7 @@ public class UserAuth {
         this.password = dotenv.get("APP_PASSWORD");
     }
 
-    public boolean authenticate(String username, String password) {
-        System.out.println("Expected username: " + this.username);
-        System.out.println("Expected password: " + this.password);
-        
+    public boolean login(String username, String password) {
         return this.username.equals(username) && this.password.equals(password);
     }
 }

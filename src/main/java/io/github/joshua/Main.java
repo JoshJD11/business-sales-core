@@ -1,8 +1,9 @@
 package io.github.joshua;
-// import io.github.joshua.user.UserAuth;
+import io.github.joshua.user.UserMenu;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello, World!");
+        UserMenu userMenu = new UserMenu();
+        userMenu.initialize();
     }
 }
