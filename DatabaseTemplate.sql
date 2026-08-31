@@ -19,14 +19,14 @@ CREATE TABLE Dim_Product (
     created_at DATETIME2 NOT NULL DEFAULT GETDATE()
 );
 
--- CREATE TABLE Dim_Supplier (
---     supplier_id INT IDENTITY(1,1) PRIMARY KEY,
---     supplier_name VARCHAR(150) NOT NULL,
---     contact_name VARCHAR(100),
---     phone VARCHAR(30),
---     email VARCHAR(150),
---     created_at DATETIME2 NOT NULL DEFAULT GETDATE()
--- );
+CREATE TABLE Dim_Supplier (
+    supplier_id INT IDENTITY(1,1) PRIMARY KEY,
+    supplier_name VARCHAR(150) NOT NULL,
+    contact_name VARCHAR(100),
+    phone VARCHAR(30),
+    email VARCHAR(150),
+    created_at DATETIME2 NOT NULL DEFAULT GETDATE()
+);
 
 CREATE TABLE Dim_ExpenseCategory (
     category_id INT IDENTITY(1,1) PRIMARY KEY,
@@ -37,7 +37,7 @@ CREATE TABLE Fact_Purchases (
     purchase_id INT IDENTITY(1,1) PRIMARY KEY,
     date_id INT NOT NULL,
     product_id INT NOT NULL,
-    -- supplier_id INT NOT NULL,
+    supplier_id INT NOT NULL,
     quantity INT NOT NULL,
     unit_cost DECIMAL(10,2) NOT NULL,
     total_cost AS (quantity * unit_cost) PERSISTED,
@@ -46,7 +46,7 @@ CREATE TABLE Fact_Purchases (
 
     CONSTRAINT FK_Purchases_Date FOREIGN KEY (date_id) REFERENCES Dim_Date(date_id),
     CONSTRAINT FK_Purchases_Product FOREIGN KEY (product_id) REFERENCES Dim_Product(product_id),
-    -- CONSTRAINT FK_Purchases_Supplier FOREIGN KEY (supplier_id) REFERENCES Dim_Supplier(supplier_id)
+    CONSTRAINT FK_Purchases_Supplier FOREIGN KEY (supplier_id) REFERENCES Dim_Supplier(supplier_id)
 );
 
 CREATE TABLE Fact_MaterialExpenses (
@@ -54,7 +54,7 @@ CREATE TABLE Fact_MaterialExpenses (
     date_id INT NOT NULL,
     category_id INT NOT NULL,
     product_id INT NULL,
-    -- supplier_id INT NULL,
+    supplier_id INT NULL,
     description VARCHAR(200) NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
     payment_method VARCHAR(30) NOT NULL,
@@ -63,7 +63,7 @@ CREATE TABLE Fact_MaterialExpenses (
     CONSTRAINT FK_Expenses_Date FOREIGN KEY (date_id) REFERENCES Dim_Date(date_id),
     CONSTRAINT FK_Expenses_Category FOREIGN KEY (category_id) REFERENCES Dim_ExpenseCategory(category_id),
     CONSTRAINT FK_Expenses_Product FOREIGN KEY (product_id) REFERENCES Dim_Product(product_id),
-    -- CONSTRAINT FK_Expenses_Supplier FOREIGN KEY (supplier_id) REFERENCES Dim_Supplier(supplier_id)
+    CONSTRAINT FK_Expenses_Supplier FOREIGN KEY (supplier_id) REFERENCES Dim_Supplier(supplier_id)
 );
 
 CREATE TABLE Inventory (
