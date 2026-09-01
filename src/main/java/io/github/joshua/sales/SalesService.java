@@ -34,7 +34,7 @@ public class SalesService {
     }
 
     public void generateReceipt(String productName, int quantity) {
-        System.out.println("Recibo generado para el producto: " + productName + " con cantidad: " + quantity);
+        System.out.println("Recibo generado para el producto: " + productName + " con cantidad: " + quantity); // Not implemented yet
     }
 
 }
