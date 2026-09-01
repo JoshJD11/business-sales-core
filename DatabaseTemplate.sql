@@ -159,25 +159,34 @@ CREATE PROCEDURE ReduceStock
     @QuantitySold INT
 AS
 BEGIN
+    SET NOCOUNT ON;
+
     DECLARE @CurrentStock INT;
+
+    IF @QuantitySold <= 0
+    BEGIN
+        THROW 50003, 'La cantidad a reducir debe ser mayor a cero.', 1;
+    END
 
     SELECT @CurrentStock = quantity_on_hand
     FROM Inventory
     WHERE product_id = @ProductId;
 
-    IF @CurrentStock >= @QuantitySold
+    IF @CurrentStock IS NULL
     BEGIN
-        UPDATE Inventory
-        SET quantity_on_hand = @CurrentStock - @QuantitySold,
-            last_updated = GETDATE()
-        WHERE product_id = @ProductId;
+        THROW 50004, 'El producto no tiene registro de inventario.', 1;
+    END
 
-        PRINT 'Stock actualizado correctamente.';
-    END
-    ELSE
+    IF @CurrentStock < @QuantitySold
     BEGIN
-        PRINT 'Error: no hay suficiente stock.';
+        THROW 50005, 'No hay suficiente stock disponible para esta venta.', 1;
     END
+
+    UPDATE Inventory
+    SET quantity_on_hand = @CurrentStock - @QuantitySold,
+        last_updated = GETDATE()
+    WHERE product_id = @ProductId;
+
 END;
 
 CREATE PROCEDURE InsertSale
@@ -187,47 +196,142 @@ CREATE PROCEDURE InsertSale
     @customer_email VARCHAR(150)
 AS
 BEGIN
+    SET NOCOUNT ON;
 
-    DECLARE @product_id INT;
-    DECLARE @unit_price DECIMAL(10,2);
-    DECLARE @customer_id INT;
-    DECLARE @today_id INT;
+    BEGIN TRY
 
-    SELECT @product_id = p.product_id, @unit_price = p.unit_price
-    FROM dbo.Dim_Product p
-    WHERE p.product_name = @product_name;
+        IF @quantity <= 0
+        BEGIN
+            THROW 50001, 'La cantidad debe ser mayor a cero.', 1;
+        END
 
-    SELECT @customer_id = c.customer_id
-    FROM dbo.Dim_Customer c
-    WHERE c.email = @customer_email;
+        DECLARE @product_id INT;
+        DECLARE @unit_price DECIMAL(10,2);
+        DECLARE @customer_id INT;
+        DECLARE @today_id INT;
 
-    SET @today_id = CAST(FORMAT(GETDATE(), 'yyyyMMdd') AS INT);
+        SELECT @product_id = p.product_id, @unit_price = p.unit_price
+        FROM dbo.Dim_Product p
+        WHERE p.product_name = @product_name;
 
-    IF NOT EXISTS (SELECT 1 FROM Dim_Date WHERE date_id = @today_id)
-    BEGIN
-        INSERT INTO Dim_Date (date_id, full_date, day, month, month_name, year, day_of_week, is_weekend)
-        VALUES (
-            @today_id,
-            CAST(GETDATE() AS DATE),
-            DAY(GETDATE()),
-            MONTH(GETDATE()),
-            DATENAME(MONTH, GETDATE()),
-            YEAR(GETDATE()),
-            DATENAME(WEEKDAY, GETDATE()),
-            CASE WHEN DATENAME(WEEKDAY, GETDATE()) IN ('Saturday', 'Sunday') THEN 1 ELSE 0 END
-        );
-    END
+        IF @product_id IS NULL
+        BEGIN
+            THROW 50002, 'Producto no encontrado.', 1;
+        END
 
-    IF @product_id IS NULL
-    BEGIN
-        PRINT 'Error: producto no encontrado.';
-        RETURN;
-    END
+        SELECT @customer_id = c.customer_id
+        FROM dbo.Dim_Customer c
+        WHERE c.email = @customer_email;
 
-    INSERT INTO Fact_Sales (date_id, product_id, customer_id, quantity, unit_price, payment_method)
-    VALUES (@today_id, @product_id, @customer_id, @quantity, @unit_price, @payment_method);
+        SET @today_id = CAST(FORMAT(GETDATE(), 'yyyyMMdd') AS INT);
 
-    EXEC ReduceStock @ProductId = @product_id, @QuantitySold = @quantity;
+        BEGIN TRANSACTION;
 
+        IF NOT EXISTS (SELECT 1 FROM Dim_Date WHERE date_id = @today_id)
+        BEGIN
+            INSERT INTO Dim_Date (date_id, full_date, day, month, month_name, year, day_of_week, is_weekend)
+            VALUES (
+                @today_id,
+                CAST(GETDATE() AS DATE),
+                DAY(GETDATE()),
+                MONTH(GETDATE()),
+                DATENAME(MONTH, GETDATE()),
+                YEAR(GETDATE()),
+                DATENAME(WEEKDAY, GETDATE()),
+                CASE WHEN DATENAME(WEEKDAY, GETDATE()) IN ('Saturday', 'Sunday') THEN 1 ELSE 0 END
+            );
+        END
+
+        INSERT INTO Fact_Sales (date_id, product_id, customer_id, quantity, unit_price, payment_method)
+        VALUES (@today_id, @product_id, @customer_id, @quantity, @unit_price, @payment_method);
+
+        EXEC ReduceStock @ProductId = @product_id, @QuantitySold = @quantity;
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+
+        THROW;
+
+    END CATCH
 END;
 
+CREATE PROCEDURE InsertExpense
+    @category_name VARCHAR(50),
+    @product_name VARCHAR(150),
+    @supplier_email VARCHAR(150),
+    @description VARCHAR(200),
+    @amount DECIMAL(10,2),
+    @payment_method VARCHAR(30),
+    @quantity INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @category_id INT;
+    DECLARE @product_id INT;
+    DECLARE @supplier_id INT;
+    DECLARE @today_id INT;
+
+    BEGIN TRY
+
+        IF @quantity <= 0
+        BEGIN
+            THROW 50001, 'La cantidad debe ser mayor a cero.', 1;
+        END
+
+        IF @amount < 0
+        BEGIN
+            THROW 50002, 'El monto no puede ser negativo.', 1;
+        END
+
+        SET @today_id = CAST(FORMAT(GETDATE(), 'yyyyMMdd') AS INT);
+
+        BEGIN TRANSACTION;
+
+        IF NOT EXISTS (SELECT 1 FROM Dim_Date WHERE date_id = @today_id)
+        BEGIN
+            INSERT INTO Dim_Date (date_id, full_date, day, month, month_name, year, day_of_week, is_weekend)
+            VALUES (
+                @today_id,
+                CAST(GETDATE() AS DATE),
+                DAY(GETDATE()),
+                MONTH(GETDATE()),
+                DATENAME(MONTH, GETDATE()),
+                YEAR(GETDATE()),
+                DATENAME(WEEKDAY, GETDATE()),
+                CASE WHEN DATENAME(WEEKDAY, GETDATE()) IN ('Saturday', 'Sunday') THEN 1 ELSE 0 END
+            );
+        END
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.Dim_ExpenseCategory c WHERE c.category_name = @category_name)
+        BEGIN
+            INSERT INTO dbo.Dim_ExpenseCategory (category_name) VALUES (@category_name);
+            SET @category_id = SCOPE_IDENTITY();
+        END
+        ELSE
+        BEGIN
+            SELECT @category_id = c.category_id FROM dbo.Dim_ExpenseCategory c WHERE c.category_name = @category_name;
+        END
+
+        SELECT @product_id = p.product_id FROM dbo.Dim_Product p WHERE p.product_name = @product_name;
+        SELECT @supplier_id = s.supplier_id FROM dbo.Dim_Supplier s WHERE s.email = @supplier_email;
+
+        INSERT INTO dbo.Fact_MaterialExpenses (date_id, category_id, product_id, supplier_id, description, amount, payment_method, quantity)
+        VALUES (@today_id, @category_id, @product_id, @supplier_id, @description, @amount, @payment_method, @quantity);
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+        THROW;
+
+    END CATCH
+END;
