@@ -4,7 +4,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import io.github.cdimascio.dotenv.Dotenv;
 
-public class DBConnection {
+public class DBConnection { // Azure SQL Database connection class
 
     public static Connection getConnection() throws SQLException {
         Dotenv dotenv = Dotenv.load();
