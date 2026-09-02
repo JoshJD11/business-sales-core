@@ -124,4 +124,5 @@ public class InventoryManager {
             System.out.println("Error al consultar el stock del producto: " + e.getMessage());
         }
     }
+
 }

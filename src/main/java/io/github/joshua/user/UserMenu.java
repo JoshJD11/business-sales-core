@@ -3,6 +3,8 @@ import io.github.joshua.inventory.InventoryManager;
 import io.github.joshua.sales.SalesService;
 import io.github.joshua.costs.BusinessExpense;
 import java.util.Scanner;
+import io.github.joshua.supplier.SupplierService;
+import io.github.joshua.product.ProductService;
 
 
 public class UserMenu {
@@ -14,6 +16,8 @@ public class UserMenu {
     private InventoryManager inventoryManager;
     private SalesService salesService;
     private BusinessExpense businessExpense;
+    private SupplierService supplierService;
+    private ProductService productService;
 
     public UserMenu() {
         this.userAuth = new UserAuth();
@@ -21,6 +25,8 @@ public class UserMenu {
         this.inventoryManager = new InventoryManager("whatsApp"); // whatsApp or email
         this.salesService = new SalesService();
         this.businessExpense = new BusinessExpense();
+        this.supplierService = new SupplierService();
+        this.productService = new ProductService();
     }
 
     private boolean authenticateUser() {
@@ -59,7 +65,13 @@ public class UserMenu {
             System.out.println("5. Consultar inventario del producto");
             System.out.println("6. Actualizar stock mínimo del producto");
             System.out.println("7. Actualizar cantidad de un producto en inventario");
-            System.out.println("8. Salir");
+            System.out.println("8. Consultar productos por nombre");
+            System.out.print("9. Insertar producto");
+            System.out.println("10. Actualizar producto");
+            System.out.print("11. Insertar proveedor");
+            System.out.println("12. Consultar proveedor por correo");
+            System.out.print("13. Actualizar proveedor");
+            System.out.println("14. Salir");
             System.out.print("Opción: ");
             String option = scanner.nextLine();
 
@@ -129,9 +141,64 @@ public class UserMenu {
                     } catch (NumberFormatException e) {
                         System.out.println("Cantidad inválida. Por favor, ingrese un número entero.");
                     }
-
                     break;
                 case "8":
+                    System.out.print("Ingrese el nombre del producto: ");
+                    String productNameToConsult = scanner.nextLine();
+                    productService.consultProductByName(productNameToConsult);
+                    break;
+                case "9":
+                    System.out.print("Ingrese el nombre del producto: ");
+                    String newProductName = scanner.nextLine();
+                    System.out.print("Ingrese la categoría: ");
+                    String newCategory = scanner.nextLine();
+                    System.out.print("Ingrese la unidad de medida: ");
+                    String newUnitOfMeasure = scanner.nextLine();
+                    System.out.print("Ingrese el precio unitario: ");
+                    try {
+                        double newUnitPrice = Double.parseDouble(scanner.nextLine());
+                        productService.insertProduct(newProductName, newCategory, newUnitOfMeasure, newUnitPrice);
+                    } catch (NumberFormatException e) {
+                        System.out.println("Precio unitario inválido. Por favor, ingrese un número válido.");
+                    }
+                    break;
+                case "10":
+                    System.out.print("Ingrese el nombre del producto a actualizar: ");
+                    String productToUpdate = scanner.nextLine();
+                    System.out.print("Ingrese la nueva categoría: ");
+                    String updatedCategory = scanner.nextLine();
+                    System.out.print("Ingrese la nueva unidad de medida: ");
+                    String updatedUnitOfMeasure = scanner.nextLine();
+                    System.out.print("Ingrese el nuevo precio unitario: ");
+                    try {
+                        double updatedUnitPrice = Double.parseDouble(scanner.nextLine());
+                        productService.updateProduct(productToUpdate, updatedCategory, updatedUnitOfMeasure, updatedUnitPrice);
+                    } catch (NumberFormatException e) {
+                        System.out.println("Precio unitario inválido. Por favor, ingrese un número válido.");
+                    }
+                    break;
+                case "11":
+                    System.out.print("Ingrese el nombre del proveedor: ");
+                    String supplierName = scanner.nextLine();
+                    System.out.print("Ingrese el correo del proveedor: ");
+                    String newSupplierEmail = scanner.nextLine();
+                    System.out.print("Ingrese el número de teléfono del proveedor: ");
+                    String supplierPhone = scanner.nextLine();
+                    System.out.print("Ingrese el nombre del contacto del proveedor: ");
+                    String contactName = scanner.nextLine();
+                    supplierService.insertSupplier(supplierName, contactName, supplierPhone, newSupplierEmail);
+                    break;
+                case "12":
+                    System.out.print("Ingrese el correo del proveedor: ");
+                    String emailToConsult = scanner.nextLine();
+                    supplierService.consultSupplierByEmail(emailToConsult);
+                    break;
+                case "13":
+                    System.out.print("Ingrese el nombre del producto para consultar su proveedor: ");
+                    String productNameForSupplier = scanner.nextLine();
+                    supplierService.consultSupplierByProduct(productNameForSupplier);
+                    break;
+                case "14":
                     exit = true;
                     System.out.println("Saliendo de la aplicación.");
                     break;
