@@ -57,7 +57,7 @@ CREATE TABLE Fact_Sales (
     created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
 
     CONSTRAINT FK_Sales_Date FOREIGN KEY (date_id) REFERENCES Dim_Date(date_id) ON DELETE CASCADE,
-    CONSTRAINT FK_Sales_Product FOREIGN KEY (product_id) REFERENCES Dim_Product(product_id) ON DELETE SET NULL,
+    CONSTRAINT FK_Sales_Product FOREIGN KEY (product_id) REFERENCES Dim_Product(product_id) ON DELETE CASCADE,
     CONSTRAINT FK_Sales_Customer FOREIGN KEY (customer_id) REFERENCES Dim_Customer(customer_id) ON DELETE SET NULL
 );
 
@@ -79,9 +79,6 @@ CREATE TABLE Fact_MaterialExpenses (
     CONSTRAINT FK_Expenses_Supplier FOREIGN KEY (supplier_id) REFERENCES Dim_Supplier(supplier_id) ON DELETE SET NULL
 );
 
-CONSTRAINT FK_Expenses_Supplier FOREIGN KEY (supplier_id)
-    REFERENCES Dim_Supplier(supplier_id)
-    ON DELETE SET NULL
 
 CREATE TABLE Inventory (
     inventory_id INT IDENTITY(1,1) PRIMARY KEY,
