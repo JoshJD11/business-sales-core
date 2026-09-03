@@ -52,8 +52,23 @@ public class SalesService {
         }
     }
 
-    public void generateReceipt(String productName, int quantity) { // Not implemented yet
-        System.out.println("Recibo generado para el producto: " + productName + " con cantidad: " + quantity);
-    }
+    public void deleteSale(int saleId) {
+        String sql = "DELETE FROM Fact_Sales WHERE sale_id = ?";
 
+        try (Connection conn = DBConnection.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, saleId);
+            int rowsAffected = pstmt.executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("Venta eliminada correctamente.");
+            } else {
+                System.out.println("No se encontró ninguna venta con el ID: " + saleId);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar la venta: " + e.getMessage());
+        }
+    }
 }

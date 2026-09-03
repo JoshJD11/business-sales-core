@@ -56,9 +56,9 @@ CREATE TABLE Fact_Sales (
     payment_method VARCHAR(30) NOT NULL,
     created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
 
-    CONSTRAINT FK_Sales_Date FOREIGN KEY (date_id) REFERENCES Dim_Date(date_id),
-    CONSTRAINT FK_Sales_Product FOREIGN KEY (product_id) REFERENCES Dim_Product(product_id),
-    CONSTRAINT FK_Sales_Customer FOREIGN KEY (customer_id) REFERENCES Dim_Customer(customer_id)
+    CONSTRAINT FK_Sales_Date FOREIGN KEY (date_id) REFERENCES Dim_Date(date_id) ON DELETE CASCADE,
+    CONSTRAINT FK_Sales_Product FOREIGN KEY (product_id) REFERENCES Dim_Product(product_id) ON DELETE SET NULL,
+    CONSTRAINT FK_Sales_Customer FOREIGN KEY (customer_id) REFERENCES Dim_Customer(customer_id) ON DELETE SET NULL
 );
 
 CREATE TABLE Fact_MaterialExpenses (
@@ -73,11 +73,15 @@ CREATE TABLE Fact_MaterialExpenses (
     created_at DATETIME2 NOT NULL DEFAULT GETDATE(),
     quantity INT NULL,
 
-    CONSTRAINT FK_Expenses_Date FOREIGN KEY (date_id) REFERENCES Dim_Date(date_id),
-    CONSTRAINT FK_Expenses_Category FOREIGN KEY (category_id) REFERENCES Dim_ExpenseCategory(category_id),
-    CONSTRAINT FK_Expenses_Product FOREIGN KEY (product_id) REFERENCES Dim_Product(product_id),
-    CONSTRAINT FK_Expenses_Supplier FOREIGN KEY (supplier_id) REFERENCES Dim_Supplier(supplier_id)
+    CONSTRAINT FK_Expenses_Date FOREIGN KEY (date_id) REFERENCES Dim_Date(date_id) ON DELETE CASCADE,
+    CONSTRAINT FK_Expenses_Category FOREIGN KEY (category_id) REFERENCES Dim_ExpenseCategory(category_id) ON DELETE CASCADE,
+    CONSTRAINT FK_Expenses_Product FOREIGN KEY (product_id) REFERENCES Dim_Product(product_id) ON DELETE SET NULL,
+    CONSTRAINT FK_Expenses_Supplier FOREIGN KEY (supplier_id) REFERENCES Dim_Supplier(supplier_id) ON DELETE SET NULL
 );
+
+CONSTRAINT FK_Expenses_Supplier FOREIGN KEY (supplier_id)
+    REFERENCES Dim_Supplier(supplier_id)
+    ON DELETE SET NULL
 
 CREATE TABLE Inventory (
     inventory_id INT IDENTITY(1,1) PRIMARY KEY,
@@ -86,7 +90,7 @@ CREATE TABLE Inventory (
     minimum_stock INT NOT NULL DEFAULT 0,
     last_updated DATETIME2 NOT NULL DEFAULT GETDATE(),
 
-    CONSTRAINT FK_Inventory_Product FOREIGN KEY (product_id) REFERENCES Dim_Product(product_id)
+    CONSTRAINT FK_Inventory_Product FOREIGN KEY (product_id) REFERENCES Dim_Product(product_id) ON DELETE CASCADE
 );
 
 -- Insert initial data into Dim_Date
@@ -323,6 +327,41 @@ BEGIN
 
         INSERT INTO dbo.Fact_MaterialExpenses (date_id, category_id, product_id, supplier_id, description, amount, payment_method, quantity)
         VALUES (@today_id, @category_id, @product_id, @supplier_id, @description, @amount, @payment_method, @quantity);
+
+        COMMIT TRANSACTION;
+
+    END TRY
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+            ROLLBACK TRANSACTION;
+        THROW;
+
+    END CATCH
+END;
+
+CREATE PROCEDURE InsertProductAndCreateInventory
+    @product_name VARCHAR(150),
+    @category VARCHAR(80),
+    @unit_of_measure VARCHAR(20),
+    @unit_price DECIMAL(10,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @product_id INT;
+
+    BEGIN TRY
+
+        BEGIN TRANSACTION;
+
+        INSERT INTO Dim_Product (product_name, category, unit_of_measure, unit_price)
+        VALUES (@product_name, @category, @unit_of_measure, @unit_price);
+
+        SET @product_id = SCOPE_IDENTITY();
+
+        INSERT INTO Inventory (product_id, quantity_on_hand, minimum_stock)
+        VALUES (@product_id, 0, 0);
 
         COMMIT TRANSACTION;
 

@@ -5,6 +5,8 @@ import io.github.joshua.costs.BusinessExpense;
 import java.util.Scanner;
 import io.github.joshua.supplier.SupplierService;
 import io.github.joshua.product.ProductService;
+import io.github.joshua.admin.DatabaseResetService;
+import io.github.joshua.admin.SqlConsoleService;
 
 
 public class UserMenu {
@@ -18,6 +20,8 @@ public class UserMenu {
     private BusinessExpense businessExpense;
     private SupplierService supplierService;
     private ProductService productService;
+    private DatabaseResetService databaseResetService;
+    private SqlConsoleService sqlConsoleService;
 
     public UserMenu() {
         this.userAuth = new UserAuth();
@@ -27,9 +31,11 @@ public class UserMenu {
         this.businessExpense = new BusinessExpense();
         this.supplierService = new SupplierService();
         this.productService = new ProductService();
+        this.databaseResetService = new DatabaseResetService();
+        this.sqlConsoleService = new SqlConsoleService();
     }
 
-    private boolean authenticateUser() {
+    private boolean authenticateUser() { // Security can be improved by implementing password hashing, salting, and using a more secure authentication mechanism. This is a basic implementation.
         int attempts = 0;
         while (attempts < MAX_ATTEMPTS) {
             System.out.print("Ingrese su usuario: ");
@@ -60,18 +66,24 @@ public class UserMenu {
             System.out.println("\nSeleccione una opción:");
             System.out.println("1. Registrar venta");
             System.out.println("2. Consultar ventas por producto");
-            System.out.println("3. Registrar gasto");
-            System.out.println("4. Consultar gasto por producto");
-            System.out.println("5. Consultar inventario del producto");
-            System.out.println("6. Actualizar stock mínimo del producto");
-            System.out.println("7. Actualizar cantidad de un producto en inventario");
-            System.out.println("8. Consultar productos por nombre");
-            System.out.print("9. Insertar producto");
-            System.out.println("10. Actualizar producto");
-            System.out.print("11. Insertar proveedor");
-            System.out.println("12. Consultar proveedor por correo");
-            System.out.print("13. Actualizar proveedor");
-            System.out.println("14. Salir");
+            System.out.println("3. Eliminar registro de venta");
+            System.out.println("4. Registrar gasto");
+            System.out.println("5. Consultar gasto por producto");
+            System.out.println("6. Eliminar registro de gasto");
+            System.out.println("7. Consultar inventario del producto");
+            System.out.println("8. Actualizar stock mínimo del producto");
+            System.out.println("9. Actualizar cantidad de un producto en inventario");
+            System.out.println("10. Consultar productos por nombre");
+            System.out.print("11. Insertar producto");
+            System.out.println("12. Actualizar producto");
+            System.out.print("13. Eliminar producto");
+            System.out.print("14. Insertar proveedor");
+            System.out.println("15. Consultar proveedor por correo");
+            System.out.print("16. Actualizar proveedor");
+            System.out.println("17. Eliminar proveedor");
+            System.out.println("18. Vaciar base de datos (¡Cuidado! Esto eliminará todos los registros)");
+            System.out.println("19. Ejecutar consulta SQL personalizada (¡Cuidado! Esto puede afectar la base de datos)");
+            System.out.println("20. Salir");
             System.out.print("Opción: ");
             String option = scanner.nextLine();
 
@@ -93,6 +105,11 @@ public class UserMenu {
                     salesService.consultSalesByProduct(productNameForSales);
                     break;
                 case "3":
+                    System.out.print("Ingrese el ID de la venta a eliminar: ");
+                    int saleIdToDelete = Integer.parseInt(scanner.nextLine());
+                    salesService.deleteSale(saleIdToDelete);
+                    break;
+                case "4":
                     System.out.print("Ingrese el nombre de la categoría: ");
                     String categoryName = scanner.nextLine();
                     System.out.print("Ingrese el nombre del producto: ");
@@ -109,17 +126,22 @@ public class UserMenu {
                     int productQuantity = Integer.parseInt(scanner.nextLine());
                     businessExpense.insertExpense(categoryName, productName, supplierEmail, description, amount, paymentMethod, productQuantity);
                     break;
-                case "4":
+                case "5":
                     System.out.print("Ingrese el nombre del producto: ");
                     String productNameForExpense = scanner.nextLine();
                     businessExpense.consultExpenseByProduct(productNameForExpense);
                     break;
-                case "5":
+                case "6":
+                    System.out.print("Ingrese el ID del gasto a eliminar: ");
+                    int expenseIdToDelete = Integer.parseInt(scanner.nextLine());
+                    businessExpense.deleteExpense(expenseIdToDelete);
+                    break;
+                case "7":
                     System.out.print("Ingrese el nombre del producto: ");
                     String productNameForInventory = scanner.nextLine();
                     inventoryManager.consultProductStock(productNameForInventory);
                     break;
-                case "6":
+                case "8":
                     System.out.print("Ingrese el nombre del producto: ");
                     String productNameForMinStock = scanner.nextLine();
                     System.out.print("Ingrese el nuevo límite del stock: ");
@@ -131,7 +153,7 @@ public class UserMenu {
                     }
 
                     break;
-                case "7":
+                case "9":
                     System.out.print("Ingrese el nombre del producto: ");
                     String productNameToUpdate = scanner.nextLine();
                     System.out.print("Ingrese la nueva cantidad: ");
@@ -142,12 +164,12 @@ public class UserMenu {
                         System.out.println("Cantidad inválida. Por favor, ingrese un número entero.");
                     }
                     break;
-                case "8":
+                case "10":
                     System.out.print("Ingrese el nombre del producto: ");
                     String productNameToConsult = scanner.nextLine();
                     productService.consultProductByName(productNameToConsult);
                     break;
-                case "9":
+                case "11":
                     System.out.print("Ingrese el nombre del producto: ");
                     String newProductName = scanner.nextLine();
                     System.out.print("Ingrese la categoría: ");
@@ -157,12 +179,12 @@ public class UserMenu {
                     System.out.print("Ingrese el precio unitario: ");
                     try {
                         double newUnitPrice = Double.parseDouble(scanner.nextLine());
-                        productService.insertProduct(newProductName, newCategory, newUnitOfMeasure, newUnitPrice);
+                        productService.insertProductAndCreateInventory(newProductName, newCategory, newUnitOfMeasure, newUnitPrice);
                     } catch (NumberFormatException e) {
                         System.out.println("Precio unitario inválido. Por favor, ingrese un número válido.");
                     }
                     break;
-                case "10":
+                case "12":
                     System.out.print("Ingrese el nombre del producto a actualizar: ");
                     String productToUpdate = scanner.nextLine();
                     System.out.print("Ingrese la nueva categoría: ");
@@ -177,7 +199,12 @@ public class UserMenu {
                         System.out.println("Precio unitario inválido. Por favor, ingrese un número válido.");
                     }
                     break;
-                case "11":
+                case "13":
+                    System.out.print("Ingrese el nombre del producto a eliminar: ");
+                    String productToDelete = scanner.nextLine();
+                    productService.deleteProduct(productToDelete);
+                    break;
+                case "14":
                     System.out.print("Ingrese el nombre del proveedor: ");
                     String supplierName = scanner.nextLine();
                     System.out.print("Ingrese el correo del proveedor: ");
@@ -188,17 +215,30 @@ public class UserMenu {
                     String contactName = scanner.nextLine();
                     supplierService.insertSupplier(supplierName, contactName, supplierPhone, newSupplierEmail);
                     break;
-                case "12":
+                case "15":
                     System.out.print("Ingrese el correo del proveedor: ");
                     String emailToConsult = scanner.nextLine();
                     supplierService.consultSupplierByEmail(emailToConsult);
                     break;
-                case "13":
+                case "16":
                     System.out.print("Ingrese el nombre del producto para consultar su proveedor: ");
                     String productNameForSupplier = scanner.nextLine();
                     supplierService.consultSupplierByProduct(productNameForSupplier);
                     break;
-                case "14":
+                case "17":
+                    System.out.print("Ingrese el correo del proveedor a eliminar: ");
+                    String emailToDelete = scanner.nextLine();
+                    supplierService.deleteSupplierByEmail(emailToDelete);
+                    break;
+                case "18":
+                    databaseResetService.resetDatabase();
+                    break;
+                case "19":
+                    System.out.print("Ingrese la consulta SQL a ejecutar: ");
+                    String sqlQuery = scanner.nextLine();
+                    sqlConsoleService.executeCustomQuery(sqlQuery);
+                    break;
+                case "20":
                     exit = true;
                     System.out.println("Saliendo de la aplicación.");
                     break;

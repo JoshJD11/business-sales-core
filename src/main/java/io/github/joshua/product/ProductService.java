@@ -1,28 +1,26 @@
 package io.github.joshua.product;
 import io.github.joshua.database.DBConnection;
+
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public class ProductService {
 
-    public void insertProduct(String productName, String category, String unitOfMeasure, double unitPrice) {
-        String sql = "INSERT INTO Dim_Product (product_name, category, unit_of_measure, unit_price) VALUES (?, ?, ?, ?)";
+    public void insertProductAndCreateInventory(String productName, String category, String unitOfMeasure, double unitPrice) {
+        String sql = "{CALL InsertProductAndCreateInventory(?, ?, ?, ?)}";
 
         try (Connection conn = DBConnection.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            CallableStatement stmt = conn.prepareCall(sql)) {
 
-            pstmt.setString(1, productName);
-            pstmt.setString(2, category);
-            pstmt.setString(3, unitOfMeasure);
-            pstmt.setDouble(4, unitPrice);
+            stmt.setString(1, productName);
+            stmt.setString(2, category);
+            stmt.setString(3, unitOfMeasure);
+            stmt.setDouble(4, unitPrice);
 
-            int rowsAffected = pstmt.executeUpdate();
-            if (rowsAffected > 0) {
-                System.out.println("Producto insertado correctamente.");
-            } else {
-                System.out.println("No se pudo insertar el producto.");
-            }
+            stmt.execute();
+            System.out.println("Producto insertado correctamente y registro de inventario creado.");
 
         } catch (SQLException e) {
             System.out.println("Error al insertar el producto: " + e.getMessage());
@@ -69,6 +67,26 @@ public class ProductService {
 
         } catch (SQLException e) {
             System.out.println("Error al actualizar el producto: " + e.getMessage());
+        }
+    }
+
+    public void deleteProduct(String productName) {
+        String sql = "DELETE FROM Dim_Product WHERE product_name = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, productName);
+
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Producto eliminado correctamente.");
+            } else {
+                System.out.println("No se encontró el producto: " + productName);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar el producto: " + e.getMessage());
         }
     }
 }

@@ -48,4 +48,24 @@ public class BusinessExpense {
             System.out.println("Error al consultar el gasto: " + e.getMessage());
         }
     }
+
+    public void deleteExpense(int expenseId) {
+        String sql = "DELETE FROM Fact_MaterialExpenses WHERE expense_id = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, expenseId);
+
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Gasto eliminado correctamente.");
+            } else {
+                System.out.println("No se encontró el gasto con ID: " + expenseId);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar el gasto: " + e.getMessage());
+        }
+    }
 }

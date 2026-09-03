@@ -93,4 +93,24 @@ public class SupplierService {
         }
     }
 
+    public void deleteSupplierByEmail(String email) {
+        String sql = "DELETE FROM Dim_Supplier WHERE email = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, email);
+
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Proveedor eliminado correctamente.");
+            } else {
+                System.out.println("No se encontró ningún proveedor con el correo: " + email);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar el proveedor: " + e.getMessage());
+        }
+    }
+
 }
