@@ -21,7 +21,7 @@ It's a command-line application (no GUI, for now) built so the business owner/ad
 
 | Component | Tool |
 |---|---|
-| Language | Java 17 |
+| Language | Java 25 |
 | Build / dependencies | Maven |
 | Database | Azure SQL Database (relational) |
 | Connection driver | `mssql-jdbc` (Microsoft JDBC Driver for SQL Server) |
