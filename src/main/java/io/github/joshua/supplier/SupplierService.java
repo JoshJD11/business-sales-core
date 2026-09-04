@@ -121,7 +121,7 @@ public class SupplierService {
             System.out.println("1. Insertar proveedor");
             System.out.println("2. Consultar proveedor por correo");
             System.out.println("3. Consultar proovedor por nombre de producto");
-            System.out.print("4. Actualizar proveedor");
+            System.out.println("4. Actualizar proveedor");
             System.out.println("5. Eliminar proveedor");
             System.out.println("6. Regresar");
             System.out.print("Opción: ");
@@ -153,13 +153,13 @@ public class SupplierService {
                     break;
 
                 case "4":
-                    System.out.println("Ingrese el email del proveedor");
+                    System.out.print("Ingrese el email del proveedor");
                     String supplierEmail = scanner.nextLine();
-                    System.out.println("Ingresar nombre del proveedor");
+                    System.out.print("Ingresar nombre del proveedor");
                     String supplierNewName = scanner.nextLine();
-                    System.out.println("Ingrese el contacto del proveedor");
+                    System.out.print("Ingrese el contacto del proveedor");
                     String supplierNewContact = scanner.nextLine();
-                    System.out.println("Ingrese el número de teléfono del proveedor");
+                    System.out.print("Ingrese el número de teléfono del proveedor");
                     String supplierNewPhone = scanner.nextLine();
                     updateSupplier(supplierEmail, supplierNewName, supplierNewContact, supplierNewPhone);
                     break;

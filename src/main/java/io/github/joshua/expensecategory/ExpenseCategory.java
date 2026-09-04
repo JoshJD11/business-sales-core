@@ -115,15 +115,15 @@ public class ExpenseCategory {
                     break;
                 
                 case "2":
-                    System.out.println("Ingrese el nombre de la categoría a insertar: ");
+                    System.out.print("Ingrese el nombre de la categoría a insertar: ");
                     String categoryNameToInsert = scanner.nextLine();
                     insertExpenseCategory(categoryNameToInsert);
                     break;
 
                 case "3":
-                    System.out.println("Ingrese el nombre de la categoría a actualizar: ");
+                    System.out.print("Ingrese el nombre de la categoría a actualizar: ");
                     String categoryNameToUpdate = scanner.nextLine();
-                    System.out.println("Ingrese el nuevo nombre que tendrá la categoría");
+                    System.out.print("Ingrese el nuevo nombre que tendrá la categoría");
                     String newCategoryName = scanner.nextLine();
                     updateExpenseCategory(newCategoryName, categoryNameToUpdate);
                     break;
