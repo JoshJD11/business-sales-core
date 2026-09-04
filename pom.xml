@@ -30,7 +30,6 @@
             <version>0.0.1</version>
         </dependency>
 
-        <!-- Reemplaza com.sun.mail:jakarta.mail por esto: -->
         <dependency>
             <groupId>jakarta.mail</groupId>
             <artifactId>jakarta.mail-api</artifactId>
@@ -40,6 +39,12 @@
             <groupId>org.eclipse.angus</groupId>
             <artifactId>angus-mail</artifactId>
             <version>2.0.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.jakewharton.fliptables</groupId>
+            <artifactId>fliptables</artifactId>
+            <version>1.1.1</version>
         </dependency>
     </dependencies>
 </project>

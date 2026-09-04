@@ -7,6 +7,7 @@ import io.github.joshua.notification.EmailNotificationSender;
 import io.github.joshua.notification.NotificationSender;
 import io.github.joshua.notification.WhatsAppNotificationSender;
 import io.github.cdimascio.dotenv.Dotenv;
+import com.jakewharton.fliptables.FlipTableConverters;
 
 public class InventoryManager {
 
@@ -111,11 +112,7 @@ public class InventoryManager {
 
             var rs = stmt.executeQuery();
             if (rs.next()) {
-                int currentQuantity = rs.getInt("quantity_on_hand");
-                int minimumStock = rs.getInt("minimum_stock");
-                System.out.println("Producto: " + productName);
-                System.out.println("Cantidad en mano: " + currentQuantity);
-                System.out.println("Límite de pila: " + minimumStock);
+                System.out.println(FlipTableConverters.fromResultSet(rs));
             } else {
                 System.out.println("No se encontró el producto: " + productName);
             }

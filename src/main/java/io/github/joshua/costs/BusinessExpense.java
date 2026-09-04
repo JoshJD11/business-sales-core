@@ -3,6 +3,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import io.github.joshua.database.DBConnection;
+import com.jakewharton.fliptables.FlipTableConverters;
 
 
 public class BusinessExpense {
@@ -39,7 +40,7 @@ public class BusinessExpense {
 
             var rs = stmt.executeQuery();
             if (rs.next()) {
-                System.out.println("Gasto encontrado: " + rs.getString("description") + ", Monto: " + rs.getDouble("amount") + ", Método de pago: " + rs.getString("payment_method"));
+                System.out.println(FlipTableConverters.fromResultSet(rs));
             } else {
                 System.out.println("No se encontró ningún gasto para el producto: " + productName);
             }

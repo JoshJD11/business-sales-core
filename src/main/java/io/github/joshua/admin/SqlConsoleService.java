@@ -1,5 +1,6 @@
 package io.github.joshua.admin;
 
+import com.jakewharton.fliptables.FlipTableConverters;
 import io.github.joshua.database.DBConnection;
 import java.sql.*;
 
@@ -18,7 +19,7 @@ public class SqlConsoleService {
 
             if (trimmedSql.startsWith("SELECT")) {
                 ResultSet rs = stmt.executeQuery(sql);
-                printResults(rs);
+                System.out.println(FlipTableConverters.fromResultSet(rs));
             } else {
                 int rows = stmt.executeUpdate(sql);
                 System.out.println("Consulta ejecutada. Filas afectadas: " + rows);
@@ -29,20 +30,4 @@ public class SqlConsoleService {
         }
     }
 
-    private void printResults(ResultSet rs) throws SQLException {
-        ResultSetMetaData meta = rs.getMetaData();
-        int columnCount = meta.getColumnCount();
-
-        for (int i = 1; i <= columnCount; i++) {
-            System.out.print(meta.getColumnName(i) + "\t");
-        }
-        System.out.println();
-
-        while (rs.next()) {
-            for (int i = 1; i <= columnCount; i++) {
-                System.out.print(rs.getString(i) + "\t");
-            }
-            System.out.println();
-        }
-    }
 }

@@ -5,6 +5,7 @@ import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import com.jakewharton.fliptables.FlipTableConverters;
 
 public class ProductService {
 
@@ -37,7 +38,7 @@ public class ProductService {
             var rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                System.out.println("Producto encontrado: " + rs.getString("product_name") + ", Categoría: " + rs.getString("category") + ", Unidad de medida: " + rs.getString("unit_of_measure") + ", Precio unitario: " + rs.getDouble("unit_price"));
+                System.out.println(FlipTableConverters.fromResultSet(rs));
             } else {
                 System.out.println("No se encontró ningún producto con el nombre: " + productName);
             }

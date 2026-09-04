@@ -3,6 +3,7 @@ import io.github.joshua.database.DBConnection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import com.jakewharton.fliptables.FlipTableConverters;
 
 
 public class SupplierService {
@@ -40,7 +41,7 @@ public class SupplierService {
             var rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                System.out.println("Proveedor encontrado: " + rs.getString("supplier_name") + ", Contacto: " + rs.getString("contact_name") + ", Teléfono: " + rs.getString("phone"));
+                System.out.println(FlipTableConverters.fromResultSet(rs));
             } else {
                 System.out.println("No se encontró ningún proveedor con el correo: " + email);
             }
@@ -60,7 +61,7 @@ public class SupplierService {
             var rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                System.out.println("Proveedor encontrado para el producto " + productName + ": " + rs.getString("supplier_name") + ", Contacto: " + rs.getString("contact_name") + ", Teléfono: " + rs.getString("phone") + ", Correo: " + rs.getString("email"));
+                System.out.println(FlipTableConverters.fromResultSet(rs));
             } else {
                 System.out.println("No se encontró ningún proveedor para el producto: " + productName);
             }

@@ -1,4 +1,4 @@
--- Tables for the business sales database, you can also create your own database
+-- Tables for the business sales database
 
 CREATE TABLE Dim_Date (
     date_id INT PRIMARY KEY,
