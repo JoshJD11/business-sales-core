@@ -3,6 +3,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Scanner;
+
 import io.github.joshua.database.DBConnection;
 import io.github.joshua.notification.EmailNotificationSender;
 import io.github.joshua.notification.NotificationSender;
@@ -13,6 +15,7 @@ import com.jakewharton.fliptables.FlipTableConverters;
 public class InventoryManager {
 
     private NotificationSender notificationSender;
+    private Scanner scanner;
 
     public InventoryManager(String notificationType) {
         if (notificationType.equalsIgnoreCase("email")) {
@@ -20,9 +23,10 @@ public class InventoryManager {
         } else {
             this.notificationSender = new WhatsAppNotificationSender();
         }
+        this.scanner = new Scanner(System.in);
     }
 
-    public boolean isStackLimitExceeded(String productName) {
+    private boolean isStackLimitExceeded(String productName) {
         String sql = "SELECT quantity_on_hand, minimum_stock FROM Dim_Product p RIGHT JOIN Inventory i ON p.product_id = i.product_id WHERE product_name = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -44,7 +48,7 @@ public class InventoryManager {
         return false;
     }
 
-    public void checkIfHaveToNotify(String productName) { // This only will notify email or whatsapp if the product has reached its stack limit, the idea is to never notify in other social media.
+    private void checkIfHaveToNotify(String productName) { // This only will notify email or whatsapp if the product has reached its stack limit, the idea is to never notify in other social media.
         if (isStackLimitExceeded(productName)) {
             String message = "El producto " + productName + " ha alcanzado su límite de pila.";
             if (notificationSender instanceof EmailNotificationSender) {
@@ -57,7 +61,7 @@ public class InventoryManager {
         }
     }
 
-    public void updateMinimumStock(String productName, int newMinimumStock) {
+    private void updateMinimumStock(String productName, int newMinimumStock) {
         String sql = "UPDATE Dim_Product SET minimum_stock = ? WHERE product_name = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -80,7 +84,7 @@ public class InventoryManager {
         }
     }
 
-    public void updateQuantityOnHand(String productName, int newQuantity) {
+    private void updateQuantityOnHand(String productName, int newQuantity) {
         String sql = "UPDATE Inventory SET quantity_on_hand = ? WHERE product_id = (SELECT product_id FROM Dim_Product WHERE product_name = ?)";
 
         try (Connection conn = DBConnection.getConnection();
@@ -103,7 +107,7 @@ public class InventoryManager {
         }
     }
 
-    public void consultProductStock(String productName) {
+    private void consultProductStock(String productName) {
         String sql = "SELECT quantity_on_hand, minimum_stock FROM Dim_Product p RIGHT JOIN Inventory i ON p.product_id = i.product_id WHERE product_name = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -119,4 +123,57 @@ public class InventoryManager {
         }
     }
 
+    public void init() {
+        boolean exit = false;
+
+        while(!exit) {
+            System.out.println("\nSeleccione una opción:");
+            System.out.println("1. Consultar inventario del producto");
+            System.out.println("2. Actualizar stock mínimo del producto");
+            System.out.println("3. Actualizar cantidad de un producto en inventario");
+            System.out.println("4. Regresar");
+            System.out.print("Opción: ");
+            String option = scanner.nextLine();
+
+            switch (option) {
+                case "1":
+                    System.out.print("Ingrese el nombre del producto: ");
+                    String productNameForInventory = scanner.nextLine();
+                    consultProductStock(productNameForInventory);
+                    break;
+                
+                case "2":
+                    System.out.print("Ingrese el nombre del producto: ");
+                    String productNameForMinStock = scanner.nextLine();
+                    System.out.print("Ingrese el nuevo límite del stock: ");
+                    try {
+                        int newMinStock = Integer.parseInt(scanner.nextLine());
+                        updateMinimumStock(productNameForMinStock, newMinStock);
+                    } catch (NumberFormatException e) {
+                        System.out.println("Límite de stock inválido. Por favor, ingrese un número entero.");
+                    }
+                    break;
+
+                case "3":
+                    System.out.print("Ingrese el nombre del producto: ");
+                    String productNameToUpdate = scanner.nextLine();
+                    System.out.print("Ingrese la nueva cantidad: ");
+                    try {
+                        int newQuantity = Integer.parseInt(scanner.nextLine());
+                        updateQuantityOnHand(productNameToUpdate, newQuantity);
+                    } catch (NumberFormatException e) {
+                        System.out.println("Cantidad inválida. Por favor, ingrese un número entero.");
+                    }
+                    break;
+
+                case "4":
+                    exit = true;
+                    break;
+                
+                default:
+                    System.out.println("Opción inválida. Por favor, seleccione una opción válida.");
+                    break;
+            }
+        }
+    }
 }

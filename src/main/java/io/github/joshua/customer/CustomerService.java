@@ -3,13 +3,21 @@ package io.github.joshua.customer;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Scanner;
 import java.sql.Connection;
 import com.jakewharton.fliptables.FlipTableConverters;
 
 import io.github.joshua.database.DBConnection;
 
 public class CustomerService {
-    public void insertCustomer(String customerName, String email, String phone) {
+
+    Scanner scanner;
+
+    public CustomerService() {
+        this.scanner = new Scanner(System.in);
+    }
+
+    private void insertCustomer(String customerName, String email, String phone) {
         String sql = "INSERT INTO Dim_Customer (customer_name, email, phone) VALUES (?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection();
@@ -31,7 +39,7 @@ public class CustomerService {
         }
     }
 
-    public void updateCustomer(String email, String newCustomerName, String newPhone) {
+    private void updateCustomer(String email, String newCustomerName, String newPhone) {
         String sql = "UPDATE Dim_Customer SET customer_name = ?, phone = ? WHERE email = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -53,7 +61,7 @@ public class CustomerService {
         }
     }
 
-    public void consultCustomerByEmail(String email) {
+    private void consultCustomerByEmail(String email) {
         String sql = "SELECT * FROM Dim_Customer WHERE email = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -69,7 +77,7 @@ public class CustomerService {
         }
     }
 
-    public void deleteCustomer(String email) {
+    private void deleteCustomer(String email) {
         String sql = "DELETE FROM Dim_Customer WHERE email = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -86,6 +94,63 @@ public class CustomerService {
 
         } catch (SQLException e) {
             System.out.println("Error al eliminar el cliente: " + e.getMessage());
+        }
+    }
+
+    public void init() {
+        boolean exit = false;
+
+        while(!exit) {
+
+            System.out.println("\nSeleccione una opción:");
+            System.out.println("1. Insertar cliente");
+            System.out.println("2. Consultar cliente por correo");
+            System.out.println("3. Actualizar cliente");
+            System.out.println("4. Eliminar cliente");
+            System.out.println("5. Regresar");
+            System.out.print("Opción: ");
+            String option = scanner.nextLine();
+
+            switch (option) {
+                case "1":
+                    System.out.print("Ingrese el nombre del cliente: ");
+                    String customerName = scanner.nextLine();
+                    System.out.print("Ingrese el correo del cliente: ");
+                    String customerEmailToInsert = scanner.nextLine();
+                    System.out.print("Ingrese el número de teléfono del cliente: ");
+                    String customerPhone = scanner.nextLine();
+                    insertCustomer(customerName, customerEmailToInsert, customerPhone);
+                    break;
+                
+                case "2":
+                    System.out.print("Ingrese el correo del cliente: ");
+                    String customerEmailToConsult = scanner.nextLine();
+                    consultCustomerByEmail(customerEmailToConsult);
+                    break;
+
+                case "3":
+                    System.out.print("Ingrese el correo del cliente a actualizar: ");
+                    String customerEmailToUpdate = scanner.nextLine();
+                    System.out.print("Ingrese el nuevo nombre del cliente: ");
+                    String newCustomerName = scanner.nextLine();
+                    System.out.print("Ingrese el nuevo número de teléfono del cliente: ");
+                    String newCustomerPhone = scanner.nextLine();
+                    updateCustomer(customerEmailToUpdate, newCustomerName, newCustomerPhone);
+                    break;
+                case "4":
+                    System.out.print("Ingrese el correo del cliente a eliminar: ");
+                    String customerEmailToDelete = scanner.nextLine();
+                    deleteCustomer(customerEmailToDelete);
+                    break;
+
+                case "5":
+                    exit = true;
+                    break;
+                
+                default:
+                    System.out.println("Opción inválida. Por favor, seleccione una opción válida.");
+                    break;
+            }
         }
     }
 }

@@ -2,13 +2,21 @@ package io.github.joshua.expensecategory;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Scanner;
 
 import com.jakewharton.fliptables.FlipTableConverters;
 import java.sql.Connection;
 import io.github.joshua.database.DBConnection;
 
 public class ExpenseCategory {
-        public void consultExpenseCategory(String categoryName) {
+
+    Scanner scanner;
+
+    public ExpenseCategory() {
+        this.scanner = new Scanner(System.in);
+    }
+
+    private void consultExpenseCategory(String categoryName) {
         String sql = "SELECT * FROM Fact_MaterialExpenses WHERE category_name = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -24,7 +32,7 @@ public class ExpenseCategory {
         }
     }
 
-    public void deleteExpenseCategory(String categoryName) {
+    private void deleteExpenseCategory(String categoryName) {
         String sql = "DELETE FROM Fact_MaterialExpenses WHERE category_name = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -44,7 +52,7 @@ public class ExpenseCategory {
         }
     }
 
-    public void updateExpenseCategory(String oldCategoryName, String newCategoryName) {
+    private void updateExpenseCategory(String oldCategoryName, String newCategoryName) {
         String sql = "UPDATE Fact_MaterialExpenses SET category_name = ? WHERE category_name = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -65,23 +73,75 @@ public class ExpenseCategory {
         }
     }
 
-    public void insertExpenseCategory(String categoryName) {
-    String sql = "INSERT INTO Dim_ExpenseCategory (category_name) VALUES (?)";
+    private void insertExpenseCategory(String categoryName) {
+        String sql = "INSERT INTO Dim_ExpenseCategory (category_name) VALUES (?)";
 
-    try (Connection conn = DBConnection.getConnection();
-        PreparedStatement stmt = conn.prepareStatement(sql)) {
+        try (Connection conn = DBConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-        stmt.setString(1, categoryName);
+            stmt.setString(1, categoryName);
 
-        int rowsAffected = stmt.executeUpdate();
-        if (rowsAffected > 0) {
-            System.out.println("Categoría de gasto '" + categoryName + "' insertada correctamente.");
-        } else {
-            System.out.println("No se pudo insertar la categoría de gasto.");
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Categoría de gasto '" + categoryName + "' insertada correctamente.");
+            } else {
+                System.out.println("No se pudo insertar la categoría de gasto.");
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error al insertar la categoría de gasto: " + e.getMessage());
         }
-
-    } catch (SQLException e) {
-        System.out.println("Error al insertar la categoría de gasto: " + e.getMessage());
     }
-}
+
+    public void init() {
+        boolean exit = false;
+
+        while(!exit) {
+
+            System.out.println("\nSeleccione una opción:");
+            System.out.println("1. Consultar categoría de producto");
+            System.out.println("2. Insertar categoría de producto");
+            System.out.println("3. Actualizar categoría de producto");
+            System.out.println("4. Eliminar categoría de producto");
+            System.out.println("5. Regresar");
+            System.out.print("Opción: ");
+            String option = scanner.nextLine();
+
+            switch (option) {
+                case "1":
+                    System.out.print("Ingrese el nombre de la categoría a consultar: ");
+                    String categoryNameToConsult = scanner.nextLine();
+                    consultExpenseCategory(categoryNameToConsult);
+                    break;
+                
+                case "2":
+                    System.out.println("Ingrese el nombre de la categoría a insertar: ");
+                    String categoryNameToInsert = scanner.nextLine();
+                    insertExpenseCategory(categoryNameToInsert);
+                    break;
+
+                case "3":
+                    System.out.println("Ingrese el nombre de la categoría a actualizar: ");
+                    String categoryNameToUpdate = scanner.nextLine();
+                    System.out.println("Ingrese el nuevo nombre que tendrá la categoría");
+                    String newCategoryName = scanner.nextLine();
+                    updateExpenseCategory(newCategoryName, categoryNameToUpdate);
+                    break;
+                case "4":
+                    System.out.print("Ingrese el nombre de la categoría a eliminar: ");
+                    String categoryNameToDelete = scanner.nextLine();
+                    deleteExpenseCategory(categoryNameToDelete);
+                    break;
+
+                case "5":
+                    exit = true;
+                    break;
+                
+                default:
+                    System.out.println("Opción inválida. Por favor, seleccione una opción válida.");
+                    break;
+            }
+        }
+    }
+
 }
