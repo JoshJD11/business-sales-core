@@ -7,6 +7,8 @@ import io.github.joshua.supplier.SupplierService;
 import io.github.joshua.product.ProductService;
 import io.github.joshua.admin.DatabaseResetService;
 import io.github.joshua.admin.SqlConsoleService;
+import io.github.joshua.expensecategory.ExpenseCategory;
+import io.github.joshua.customer.CustomerService;
 
 
 public class UserMenu {
@@ -22,6 +24,8 @@ public class UserMenu {
     private ProductService productService;
     private DatabaseResetService databaseResetService;
     private SqlConsoleService sqlConsoleService;
+    private CustomerService customerService;
+    private ExpenseCategory expenseCategory;
 
     public UserMenu() {
         this.userAuth = new UserAuth();
@@ -33,6 +37,8 @@ public class UserMenu {
         this.productService = new ProductService();
         this.databaseResetService = new DatabaseResetService();
         this.sqlConsoleService = new SqlConsoleService();
+        this.expenseCategory = new ExpenseCategory();
+        this.customerService = new CustomerService();
     }
 
     private boolean authenticateUser() { // Security can be improved by implementing password hashing, salting, and using a more secure authentication mechanism. This is a basic implementation.
@@ -81,9 +87,17 @@ public class UserMenu {
             System.out.println("15. Consultar proveedor por correo");
             System.out.print("16. Actualizar proveedor");
             System.out.println("17. Eliminar proveedor");
-            System.out.println("18. Vaciar base de datos (¡Cuidado! Esto eliminará todos los registros)");
-            System.out.println("19. Ejecutar consulta SQL personalizada (¡Cuidado! Esto puede afectar la base de datos)");
-            System.out.println("20. Salir");
+            System.out.println("18. Insertar cliente");
+            System.out.println("19. Consultar cliente por correo");
+            System.out.println("20. Actualizar cliente");
+            System.out.println("21. Eliminar cliente");
+            System.out.println("22. Consultar categoría de producto");
+            System.out.println("23. Insertar categoría de producto");
+            System.out.println("24. Actualizar categoría de producto");
+            System.out.println("25. Eliminar categoría de producto");
+            System.out.println("26. Vaciar base de datos (¡Cuidado! Esto eliminará todos los registros)");
+            System.out.println("27. Ejecutar consulta SQL personalizada (¡Cuidado! Esto puede afectar la base de datos)");
+            System.out.println("28. Salir");
             System.out.print("Opción: ");
             String option = scanner.nextLine();
 
@@ -231,14 +245,63 @@ public class UserMenu {
                     supplierService.deleteSupplierByEmail(emailToDelete);
                     break;
                 case "18":
-                    databaseResetService.resetDatabase();
+                    System.out.print("Ingrese el nombre del cliente: ");
+                    String customerName = scanner.nextLine();
+                    System.out.print("Ingrese el correo del cliente: ");
+                    String customerEmailToInsert = scanner.nextLine();
+                    System.out.print("Ingrese el número de teléfono del cliente: ");
+                    String customerPhone = scanner.nextLine();
+                    customerService.insertCustomer(customerName, customerEmailToInsert, customerPhone);
                     break;
                 case "19":
+                    System.out.print("Ingrese el correo del cliente: ");
+                    String customerEmailToConsult = scanner.nextLine();
+                    customerService.consultCustomerByEmail(customerEmailToConsult);
+                    break;
+                case "20":
+                    System.out.print("Ingrese el correo del cliente a actualizar: ");
+                    String customerEmailToUpdate = scanner.nextLine();
+                    System.out.print("Ingrese el nuevo nombre del cliente: ");
+                    String newCustomerName = scanner.nextLine();
+                    System.out.print("Ingrese el nuevo número de teléfono del cliente: ");
+                    String newCustomerPhone = scanner.nextLine();
+                    customerService.updateCustomer(customerEmailToUpdate, newCustomerName, newCustomerPhone);
+                    break;
+                case "21":
+                    System.out.print("Ingrese el correo del cliente a eliminar: ");
+                    String customerEmailToDelete = scanner.nextLine();
+                    customerService.deleteCustomer(customerEmailToDelete);
+                    break;
+                case "22":
+                    System.out.print("Ingrese el nombre de la categoría a consultar: ");
+                    String categoryNameToConsult = scanner.nextLine();
+                    expenseCategory.consultExpenseCategory(categoryNameToConsult);
+                    break;
+                case "23":
+                    System.out.println("Ingrese el nombre de la categoría a insertar: ");
+                    String categoryNameToInsert = scanner.nextLine();
+                    expenseCategory.insertExpenseCategory(categoryNameToInsert);
+                case "24":
+                    System.out.print("Ingrese el nombre de la categoría a actualizar: ");
+                    String oldCategoryName = scanner.nextLine();
+                    System.out.print("Ingrese el nuevo nombre de la categoría: ");
+                    String newCategoryName = scanner.nextLine();
+                    expenseCategory.updateExpenseCategory(oldCategoryName, newCategoryName);
+                    break;
+                case "25":
+                    System.out.print("Ingrese el nombre de la categoría a eliminar: ");
+                    String categoryNameToDelete = scanner.nextLine();
+                    expenseCategory.deleteExpenseCategory(categoryNameToDelete);
+                    break;
+                case "26":
+                    databaseResetService.resetDatabase();
+                    break;
+                case "27":
                     System.out.print("Ingrese la consulta SQL a ejecutar: ");
                     String sqlQuery = scanner.nextLine();
                     sqlConsoleService.executeCustomQuery(sqlQuery);
                     break;
-                case "20":
+                case "28":
                     exit = true;
                     System.out.println("Saliendo de la aplicación.");
                     break;
