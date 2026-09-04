@@ -36,12 +36,8 @@ public class ProductService {
 
             pstmt.setString(1, productName);
             var rs = pstmt.executeQuery();
+            System.out.println(FlipTableConverters.fromResultSet(rs));
 
-            if (rs.next()) {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            } else {
-                System.out.println("No se encontró ningún producto con el nombre: " + productName);
-            }
 
         } catch (SQLException e) {
             System.out.println("Error al consultar el producto: " + e.getMessage());

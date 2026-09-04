@@ -1,6 +1,7 @@
 package io.github.joshua.inventory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import io.github.joshua.database.DBConnection;
 import io.github.joshua.notification.EmailNotificationSender;
@@ -110,12 +111,8 @@ public class InventoryManager {
 
             stmt.setString(1, productName);
 
-            var rs = stmt.executeQuery();
-            if (rs.next()) {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            } else {
-                System.out.println("No se encontró el producto: " + productName);
-            }
+            ResultSet rs = stmt.executeQuery();
+            System.out.println(FlipTableConverters.fromResultSet(rs));
 
         } catch (SQLException e) {
             System.out.println("Error al consultar el stock del producto: " + e.getMessage());

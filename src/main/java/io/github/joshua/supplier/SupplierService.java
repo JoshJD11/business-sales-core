@@ -39,12 +39,7 @@ public class SupplierService {
 
             pstmt.setString(1, email);
             var rs = pstmt.executeQuery();
-
-            if (rs.next()) {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            } else {
-                System.out.println("No se encontró ningún proveedor con el correo: " + email);
-            }
+            System.out.println(FlipTableConverters.fromResultSet(rs));
 
         } catch (SQLException e) {
             System.out.println("Error al consultar el proveedor: " + e.getMessage());
@@ -59,12 +54,7 @@ public class SupplierService {
 
             pstmt.setString(1, productName);
             var rs = pstmt.executeQuery();
-
-            if (rs.next()) {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            } else {
-                System.out.println("No se encontró ningún proveedor para el producto: " + productName);
-            }
+            System.out.println(FlipTableConverters.fromResultSet(rs));
 
         } catch (SQLException e) {
             System.out.println("Error al consultar el proveedor por producto: " + e.getMessage());

@@ -5,6 +5,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
 import io.github.joshua.database.DBConnection;
 import com.jakewharton.fliptables.FlipTableConverters;
 
@@ -43,15 +45,11 @@ public class SalesService {
 
             stmt.setString(1, productName);
 
-            var rs = stmt.executeQuery();
-            if (rs.next()) {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            } else {
-                System.out.println("No se encontraron ventas para el producto: " + productName);
-            }
+            ResultSet rs = stmt.executeQuery();
+            System.out.println(FlipTableConverters.fromResultSet(rs));
 
         } catch (SQLException e) {
-            System.out.println("Error al consultar la ventas: " + e.getMessage());
+            System.out.println("Error al consultar las ventas: " + e.getMessage());
         }
     }
 

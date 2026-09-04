@@ -39,11 +39,7 @@ public class BusinessExpense {
             stmt.setString(1, productName);
 
             var rs = stmt.executeQuery();
-            if (rs.next()) {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            } else {
-                System.out.println("No se encontró ningún gasto para el producto: " + productName);
-            }
+            System.out.println(FlipTableConverters.fromResultSet(rs));
 
         } catch (SQLException e) {
             System.out.println("Error al consultar el gasto: " + e.getMessage());
