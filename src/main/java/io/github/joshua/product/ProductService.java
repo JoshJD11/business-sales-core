@@ -17,6 +17,20 @@ public class ProductService {
         this.scanner = new Scanner(System.in);
     }
 
+    public void consultAllProducts() {
+        String sql = "SELECT * FROM Dim_Product";
+
+        try (Connection conn = DBConnection.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            var rs = pstmt.executeQuery();
+            System.out.println(FlipTableConverters.fromResultSet(rs));
+
+        } catch (SQLException e) {
+            System.out.println("Error al consultar el producto: " + e.getMessage());
+        }
+    }
+
     private void insertProductAndCreateInventory(String productName, String category, String unitOfMeasure, double unitPrice) {
         String sql = "{CALL InsertProductAndCreateInventory(?, ?, ?, ?)}";
 
@@ -102,22 +116,27 @@ public class ProductService {
         while(!exit) {
             
             System.out.println("\nSeleccione una opción:");
-            System.out.println("1. Consultar productos por nombre");
-            System.out.println("2. Insertar producto");
-            System.out.println("3. Actualizar producto");
-            System.out.println("4. Eliminar producto");
-            System.out.println("5. Regresar");
+            System.out.println("1. Consultar todos los productos");
+            System.out.println("2. Consultar productos por nombre");
+            System.out.println("3. Insertar producto");
+            System.out.println("4. Actualizar producto");
+            System.out.println("5. Eliminar producto");
+            System.out.println("6. Regresar");
             System.out.print("Opción: ");
             String option = scanner.nextLine();
 
             switch (option) {
                 case "1":
+                    consultAllProducts();
+                    break;
+                    
+                case "2":
                     System.out.print("Ingrese el nombre del producto: ");
                     String productNameToConsult = scanner.nextLine();
                     consultProductByName(productNameToConsult);
                     break;
                 
-                case "2":
+                case "3":
                     System.out.print("Ingrese el nombre del producto: ");
                     String newProductName = scanner.nextLine();
                     System.out.print("Ingrese la categoría: ");
@@ -133,7 +152,7 @@ public class ProductService {
                     }
                     break;
 
-                case "3":
+                case "4":
                     System.out.print("Ingrese el nombre del producto a actualizar: ");
                     String productToUpdate = scanner.nextLine();
                     System.out.print("Ingrese la nueva categoría: ");
@@ -149,13 +168,13 @@ public class ProductService {
                     }
                     break;
 
-                case "4":
+                case "5":
                     System.out.print("Ingrese el nombre del producto a eliminar: ");
                     String productToDelete = scanner.nextLine();
                     deleteProduct(productToDelete);
                     break;
 
-                case "5":
+                case "6":
                     exit = true;
                     break;
                 

@@ -61,6 +61,20 @@ public class CustomerService {
         }
     }
 
+    private void consultAllCustomers() {
+        String sql = "SELECT * FROM Dim_Customer";
+
+        try (Connection conn = DBConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            ResultSet rs = stmt.executeQuery();
+            System.out.println(FlipTableConverters.fromResultSet(rs));
+
+        } catch (SQLException e) {
+            System.out.println("Error al consultar el cliente: " + e.getMessage());
+        }
+    }
+
     private void consultCustomerByEmail(String email) {
         String sql = "SELECT * FROM Dim_Customer WHERE email = ?";
 
@@ -104,10 +118,11 @@ public class CustomerService {
 
             System.out.println("\nSeleccione una opción:");
             System.out.println("1. Insertar cliente");
-            System.out.println("2. Consultar cliente por correo");
-            System.out.println("3. Actualizar cliente");
-            System.out.println("4. Eliminar cliente");
-            System.out.println("5. Regresar");
+            System.out.println("2. Consultar todos los clientes registrados");
+            System.out.println("3. Consultar cliente por correo");
+            System.out.println("4. Actualizar cliente");
+            System.out.println("5. Eliminar cliente");
+            System.out.println("6. Regresar");
             System.out.print("Opción: ");
             String option = scanner.nextLine();
 
@@ -123,12 +138,16 @@ public class CustomerService {
                     break;
                 
                 case "2":
+                    consultAllCustomers();
+                    break;
+
+                case "3":
                     System.out.print("Ingrese el correo del cliente: ");
                     String customerEmailToConsult = scanner.nextLine();
                     consultCustomerByEmail(customerEmailToConsult);
                     break;
 
-                case "3":
+                case "4":
                     System.out.print("Ingrese el correo del cliente a actualizar: ");
                     String customerEmailToUpdate = scanner.nextLine();
                     System.out.print("Ingrese el nuevo nombre del cliente: ");
@@ -137,13 +156,13 @@ public class CustomerService {
                     String newCustomerPhone = scanner.nextLine();
                     updateCustomer(customerEmailToUpdate, newCustomerName, newCustomerPhone);
                     break;
-                case "4":
+                case "5":
                     System.out.print("Ingrese el correo del cliente a eliminar: ");
                     String customerEmailToDelete = scanner.nextLine();
                     deleteCustomer(customerEmailToDelete);
                     break;
 
-                case "5":
+                case "6":
                     exit = true;
                     break;
                 

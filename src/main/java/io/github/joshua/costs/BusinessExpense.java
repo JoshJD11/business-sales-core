@@ -15,6 +15,20 @@ public class BusinessExpense {
     public BusinessExpense() {
         this.scanner = new Scanner(System.in);
     }
+
+    private void consultAllExpenses() {
+        String sql = "SELECT * FROM Fact_MaterialExpenses";
+
+        try (Connection conn = DBConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            var rs = stmt.executeQuery();
+            System.out.println(FlipTableConverters.fromResultSet(rs));
+
+        } catch (SQLException e) {
+            System.out.println("Error al consultar el gasto: " + e.getMessage());
+        }
+    }
     
     private void insertExpense(String categoryName, String productName, String supplierEmail, String description, double amount, String paymentMethod, int quantity) {
         String sql = "CALL InsertExpense(?, ?, ?, ?, ?, ?, ?)";
@@ -81,9 +95,10 @@ public class BusinessExpense {
 
             System.out.println("\nSeleccione una opción:");
             System.out.println("1. Registrar gasto");
-            System.out.println("2. Consultar gastos por producto");
-            System.out.println("3. Eliminar registro de gasto");
-            System.out.println("4. Regresar");
+            System.out.println("2. Consultar todos los gastos registrados");
+            System.out.println("3. Consultar gastos por producto");
+            System.out.println("4. Eliminar registro de gasto");
+            System.out.println("5. Regresar");
             System.out.print("Opción: ");
             String option = scanner.nextLine();
 
@@ -105,20 +120,24 @@ public class BusinessExpense {
                     int productQuantity = Integer.parseInt(scanner.nextLine());
                     insertExpense(categoryName, productName, supplierEmail, description, amount, paymentMethod, productQuantity);
                     break;
-                
+
                 case "2":
+                    consultAllExpenses();
+                    break;
+                
+                case "3":
                     System.out.print("Ingrese el nombre del producto: ");
                     String productNameForExpense = scanner.nextLine();
                     consultExpenseByProduct(productNameForExpense);
                     break;
 
-                case "3":
+                case "4":
                     System.out.print("Ingrese el ID del gasto a eliminar: ");
                     int expenseIdToDelete = Integer.parseInt(scanner.nextLine());
                     deleteExpense(expenseIdToDelete);
                     break;
 
-                case "4":
+                case "5":
                     exit = true;
                     break;
                 

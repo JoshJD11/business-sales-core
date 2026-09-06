@@ -39,6 +39,20 @@ public class SupplierService {
         }
     }
 
+    private void consultAllSuppliers() {
+        String sql = "SELECT * FROM Dim_Supplier";
+
+        try (Connection conn = DBConnection.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            var rs = pstmt.executeQuery();
+            System.out.println(FlipTableConverters.fromResultSet(rs));
+
+        } catch (SQLException e) {
+            System.out.println("Error al consultar el proveedor: " + e.getMessage());
+        }
+    }
+
     private void consultSupplierByEmail(String email) {
         String sql = "SELECT * FROM Dim_Supplier WHERE email = ?";
 
@@ -119,11 +133,12 @@ public class SupplierService {
 
             System.out.println("\nSeleccione una opción:");
             System.out.println("1. Insertar proveedor");
-            System.out.println("2. Consultar proveedor por correo");
-            System.out.println("3. Consultar proovedor por nombre de producto");
-            System.out.println("4. Actualizar proveedor");
-            System.out.println("5. Eliminar proveedor");
-            System.out.println("6. Regresar");
+            System.out.println("2. Consultar todos los proveedores registrados");
+            System.out.println("3. Consultar proveedor por correo");
+            System.out.println("4. Consultar proovedor por nombre de producto");
+            System.out.println("5. Actualizar proveedor");
+            System.out.println("6. Eliminar proveedor");
+            System.out.println("7. Regresar");
             System.out.print("Opción: ");
             String option = scanner.nextLine();
 
@@ -141,18 +156,22 @@ public class SupplierService {
                     break;
                 
                 case "2":
+                    consultAllSuppliers();
+                    break;
+                
+                case "3":
                     System.out.print("Ingrese el correo del proveedor: ");
                     String emailToConsult = scanner.nextLine();
                     consultSupplierByEmail(emailToConsult);
                     break;
 
-                case "3":
+                case "4":
                     System.out.print("Ingrese el nombre del producto para consultar su proveedor: ");
                     String productNameForSupplier = scanner.nextLine();
                     consultSupplierByProduct(productNameForSupplier);
                     break;
 
-                case "4":
+                case "5":
                     System.out.print("Ingrese el email del proveedor");
                     String supplierEmail = scanner.nextLine();
                     System.out.print("Ingresar nombre del proveedor");
@@ -164,13 +183,13 @@ public class SupplierService {
                     updateSupplier(supplierEmail, supplierNewName, supplierNewContact, supplierNewPhone);
                     break;
 
-                case "5":
+                case "6":
                     System.out.print("Ingrese el correo del proveedor a eliminar: ");
                     String emailToDelete = scanner.nextLine();
                     deleteSupplierByEmail(emailToDelete);
                     break;
 
-                case "6":
+                case "7":
                     exit = true;
                     break;
                 

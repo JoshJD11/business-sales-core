@@ -20,6 +20,20 @@ public class SalesService {
         this.scanner = new Scanner(System.in);
     }
 
+    public void consultAllSales() {
+        String sql = "SELECT * FROM Fact_Sales";
+
+        try (Connection conn = DBConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            ResultSet rs = stmt.executeQuery();
+            System.out.println(FlipTableConverters.fromResultSet(rs));
+
+        } catch (SQLException e) {
+            System.out.println("Error al consultar las ventas: " + e.getMessage());
+        }
+    }
+
     private void insertSale(String productName, int quantity, String paymentMethod, String customerEmail) {
         String sql = "{CALL InsertSale(?, ?, ?, ?)}";
 
@@ -87,9 +101,10 @@ public class SalesService {
 
             System.out.println("\nSeleccione una opción:");
             System.out.println("1. Registrar venta");
-            System.out.println("2. Consultar ventas por producto");
-            System.out.println("3. Eliminar registro de venta");
-            System.out.println("4. Regresar");
+            System.out.println("2. Consultar todas las ventas registradas");
+            System.out.println("3. Consultar ventas por producto");
+            System.out.println("4. Eliminar registro de venta");
+            System.out.println("5. Regresar");
             System.out.print("Opción: ");
             String option = scanner.nextLine();
 
@@ -107,18 +122,22 @@ public class SalesService {
                     break;
                 
                 case "2":
+                    consultAllSales();
+                    break;
+                
+                case "3":
                     System.out.print("Ingrese el nombre del producto: ");
                     String productNameForSales = scanner.nextLine();
                     consultSalesByProduct(productNameForSales);
                     break;
 
-                case "3":
+                case "4":
                     System.out.print("Ingrese el ID de la venta a eliminar: ");
                     int saleIdToDelete = Integer.parseInt(scanner.nextLine());
                     deleteSale(saleIdToDelete);
                     break;
 
-                case "4":
+                case "5":
                     exit = true;
                     break;
                 
