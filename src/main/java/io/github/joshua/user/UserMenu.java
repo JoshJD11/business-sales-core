@@ -9,6 +9,7 @@ import io.github.joshua.admin.DatabaseResetService;
 import io.github.joshua.admin.SqlConsoleService;
 import io.github.joshua.expensecategory.ExpenseCategory;
 import io.github.joshua.customer.CustomerService;
+import io.github.joshua.util.AppSettings;
 
 
 public class UserMenu {
@@ -79,7 +80,8 @@ public class UserMenu {
             System.out.println("7. Categorías de gastos");
             System.out.println("8. Vaciar base de datos (¡Cuidado! Esto eliminará todos los registros)");
             System.out.println("9. Ejecutar consulta SQL personalizada (¡Cuidado! Esto puede afectar la base de datos)");
-            System.out.println("10. Salir");
+            System.out.println("10. " + (AppSettings.isExportSelectsToExcel()? "Desactivar " : "Activar ") + "exportación de consultas a excel");
+            System.out.println("11. Salir");
             System.out.print("Opción: ");
             String option = scanner.nextLine();
 
@@ -120,6 +122,9 @@ public class UserMenu {
                     sqlConsoleService.executeCustomQuery(sqlQuery);
                     break;
                 case "10":
+                    AppSettings.setExportSelectsToExcel(!AppSettings.isExportSelectsToExcel());
+                    break;
+                case "11":
                     exit = true;
                     System.out.println("Saliendo de la aplicación.");
                     break;
