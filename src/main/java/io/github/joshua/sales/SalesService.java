@@ -1,5 +1,6 @@
 package io.github.joshua.sales;
 
+import java.io.IOException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -7,6 +8,8 @@ import java.sql.Types;
 import java.util.Scanner;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import io.github.joshua.util.AppSettings;
+import io.github.joshua.util.ExcelExportService;
 
 import io.github.joshua.database.DBConnection;
 import com.jakewharton.fliptables.FlipTableConverters;
@@ -27,9 +30,13 @@ public class SalesService {
             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             ResultSet rs = stmt.executeQuery();
-            System.out.println(FlipTableConverters.fromResultSet(rs));
+            if (AppSettings.isExportSelectsToExcel()) {
+                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+            } else {
+                System.out.println(FlipTableConverters.fromResultSet(rs));
+            }
 
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.out.println("Error al consultar las ventas: " + e.getMessage());
         }
     }
@@ -67,9 +74,13 @@ public class SalesService {
             stmt.setString(1, productName);
 
             ResultSet rs = stmt.executeQuery();
-            System.out.println(FlipTableConverters.fromResultSet(rs));
+            if (AppSettings.isExportSelectsToExcel()) {
+                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+            } else {
+                System.out.println(FlipTableConverters.fromResultSet(rs));
+            }
 
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.out.println("Error al consultar las ventas: " + e.getMessage());
         }
     }

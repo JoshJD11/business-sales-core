@@ -4,8 +4,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
+import io.github.joshua.util.AppSettings;
+import io.github.joshua.util.ExcelExportService;
 
 import com.jakewharton.fliptables.FlipTableConverters;
+
+import java.io.IOException;
 import java.sql.Connection;
 import io.github.joshua.database.DBConnection;
 
@@ -24,9 +28,13 @@ public class ExpenseCategory {
             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             var rs = stmt.executeQuery();
-            System.out.println(FlipTableConverters.fromResultSet(rs));
+            if (AppSettings.isExportSelectsToExcel()) {
+                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+            } else {
+                System.out.println(FlipTableConverters.fromResultSet(rs));
+            }
 
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.out.println("Error al consultar los gastos por categoría: " + e.getMessage());
         }
     }
@@ -40,9 +48,13 @@ public class ExpenseCategory {
             stmt.setString(1, categoryName);
 
             var rs = stmt.executeQuery();
-            System.out.println(FlipTableConverters.fromResultSet(rs));
+            if (AppSettings.isExportSelectsToExcel()) {
+                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+            } else {
+                System.out.println(FlipTableConverters.fromResultSet(rs));
+            }
 
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.out.println("Error al consultar los gastos por categoría: " + e.getMessage());
         }
     }

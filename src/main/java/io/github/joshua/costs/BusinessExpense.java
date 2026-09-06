@@ -1,4 +1,5 @@
 package io.github.joshua.costs;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -6,6 +7,8 @@ import java.util.Scanner;
 
 import io.github.joshua.database.DBConnection;
 import com.jakewharton.fliptables.FlipTableConverters;
+import io.github.joshua.util.AppSettings;
+import io.github.joshua.util.ExcelExportService;
 
 
 public class BusinessExpense {
@@ -23,9 +26,14 @@ public class BusinessExpense {
             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             var rs = stmt.executeQuery();
-            System.out.println(FlipTableConverters.fromResultSet(rs));
 
-        } catch (SQLException e) {
+            if (AppSettings.isExportSelectsToExcel()) {
+                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+            } else {
+                System.out.println(FlipTableConverters.fromResultSet(rs));
+            }
+
+        } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el gasto: " + e.getMessage());
         }
     }
@@ -61,9 +69,13 @@ public class BusinessExpense {
             stmt.setString(1, productName);
 
             var rs = stmt.executeQuery();
-            System.out.println(FlipTableConverters.fromResultSet(rs));
+            if (AppSettings.isExportSelectsToExcel()) {
+                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+            } else {
+                System.out.println(FlipTableConverters.fromResultSet(rs));
+            }
 
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el gasto: " + e.getMessage());
         }
     }

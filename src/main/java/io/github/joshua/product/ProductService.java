@@ -1,11 +1,15 @@
 package io.github.joshua.product;
 import io.github.joshua.database.DBConnection;
 
+import java.io.IOException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Scanner;
+
+import io.github.joshua.util.AppSettings;
+import io.github.joshua.util.ExcelExportService;
 
 import com.jakewharton.fliptables.FlipTableConverters;
 
@@ -24,9 +28,13 @@ public class ProductService {
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             var rs = pstmt.executeQuery();
-            System.out.println(FlipTableConverters.fromResultSet(rs));
+            if (AppSettings.isExportSelectsToExcel()) {
+                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+            } else {
+                System.out.println(FlipTableConverters.fromResultSet(rs));
+            }
 
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el producto: " + e.getMessage());
         }
     }
@@ -58,10 +66,13 @@ public class ProductService {
 
             pstmt.setString(1, productName);
             var rs = pstmt.executeQuery();
-            System.out.println(FlipTableConverters.fromResultSet(rs));
+            if (AppSettings.isExportSelectsToExcel()) {
+                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+            } else {
+                System.out.println(FlipTableConverters.fromResultSet(rs));
+            }
 
-
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el producto: " + e.getMessage());
         }
     }
@@ -129,7 +140,7 @@ public class ProductService {
                 case "1":
                     consultAllProducts();
                     break;
-                    
+
                 case "2":
                     System.out.print("Ingrese el nombre del producto: ");
                     String productNameToConsult = scanner.nextLine();

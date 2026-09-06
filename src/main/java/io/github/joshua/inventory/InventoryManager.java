@@ -1,4 +1,5 @@
 package io.github.joshua.inventory;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,6 +12,9 @@ import io.github.joshua.notification.NotificationSender;
 import io.github.joshua.notification.WhatsAppNotificationSender;
 import io.github.cdimascio.dotenv.Dotenv;
 import com.jakewharton.fliptables.FlipTableConverters;
+import io.github.joshua.util.AppSettings;
+import io.github.joshua.util.ExcelExportService;
+
 
 public class InventoryManager {
 
@@ -116,9 +120,13 @@ public class InventoryManager {
             stmt.setString(1, productName);
 
             ResultSet rs = stmt.executeQuery();
-            System.out.println(FlipTableConverters.fromResultSet(rs));
+            if (AppSettings.isExportSelectsToExcel()) {
+                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+            } else {
+                System.out.println(FlipTableConverters.fromResultSet(rs));
+            }
 
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el stock del producto: " + e.getMessage());
         }
     }

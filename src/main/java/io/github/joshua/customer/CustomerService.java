@@ -4,8 +4,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
+import java.io.IOException;
 import java.sql.Connection;
 import com.jakewharton.fliptables.FlipTableConverters;
+import io.github.joshua.util.AppSettings;
+import io.github.joshua.util.ExcelExportService;
 
 import io.github.joshua.database.DBConnection;
 
@@ -68,9 +71,13 @@ public class CustomerService {
             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             ResultSet rs = stmt.executeQuery();
-            System.out.println(FlipTableConverters.fromResultSet(rs));
+            if (AppSettings.isExportSelectsToExcel()) {
+                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+            } else {
+                System.out.println(FlipTableConverters.fromResultSet(rs));
+            }
 
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el cliente: " + e.getMessage());
         }
     }
@@ -84,9 +91,13 @@ public class CustomerService {
             stmt.setString(1, email);
 
             ResultSet rs = stmt.executeQuery();
-            System.out.println(FlipTableConverters.fromResultSet(rs));
+            if (AppSettings.isExportSelectsToExcel()) {
+                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+            } else {
+                System.out.println(FlipTableConverters.fromResultSet(rs));
+            }
 
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el cliente: " + e.getMessage());
         }
     }

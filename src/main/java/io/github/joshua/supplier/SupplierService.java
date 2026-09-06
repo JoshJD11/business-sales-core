@@ -1,9 +1,13 @@
 package io.github.joshua.supplier;
 import io.github.joshua.database.DBConnection;
+
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Scanner;
+import io.github.joshua.util.AppSettings;
+import io.github.joshua.util.ExcelExportService;
 
 import com.jakewharton.fliptables.FlipTableConverters;
 
@@ -46,9 +50,13 @@ public class SupplierService {
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             var rs = pstmt.executeQuery();
-            System.out.println(FlipTableConverters.fromResultSet(rs));
+            if (AppSettings.isExportSelectsToExcel()) {
+                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+            } else {
+                System.out.println(FlipTableConverters.fromResultSet(rs));
+            }
 
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el proveedor: " + e.getMessage());
         }
     }
@@ -61,9 +69,13 @@ public class SupplierService {
 
             pstmt.setString(1, email);
             var rs = pstmt.executeQuery();
-            System.out.println(FlipTableConverters.fromResultSet(rs));
+            if (AppSettings.isExportSelectsToExcel()) {
+                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+            } else {
+                System.out.println(FlipTableConverters.fromResultSet(rs));
+            }
 
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el proveedor: " + e.getMessage());
         }
     }
@@ -76,9 +88,13 @@ public class SupplierService {
 
             pstmt.setString(1, productName);
             var rs = pstmt.executeQuery();
-            System.out.println(FlipTableConverters.fromResultSet(rs));
+            if (AppSettings.isExportSelectsToExcel()) {
+                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+            } else {
+                System.out.println(FlipTableConverters.fromResultSet(rs));
+            }
 
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el proveedor por producto: " + e.getMessage());
         }
     }
