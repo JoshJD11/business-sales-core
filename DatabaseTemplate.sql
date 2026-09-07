@@ -371,3 +371,23 @@ BEGIN
 
     END CATCH
 END;
+
+-- Indexes
+
+CREATE INDEX IX_Product_Name ON Dim_Product(product_name);
+
+
+CREATE INDEX IX_Customer_Email ON Dim_Customer(email);
+CREATE INDEX IX_Supplier_Email ON Dim_Supplier(email);
+
+
+CREATE INDEX IX_ExpenseCategory_Name ON Dim_ExpenseCategory(category_name);
+
+CREATE INDEX IX_Sales_ProductId ON Fact_Sales(product_id);
+CREATE INDEX IX_Sales_CustomerId ON Fact_Sales(customer_id);
+CREATE INDEX IX_Sales_DateId ON Fact_Sales(date_id);
+
+CREATE INDEX IX_Expenses_ProductId ON Fact_MaterialExpenses(product_id);
+CREATE INDEX IX_Expenses_SupplierId ON Fact_MaterialExpenses(supplier_id);
+CREATE INDEX IX_Expenses_CategoryId ON Fact_MaterialExpenses(category_id);
+CREATE INDEX IX_Expenses_DateId ON Fact_MaterialExpenses(date_id);
