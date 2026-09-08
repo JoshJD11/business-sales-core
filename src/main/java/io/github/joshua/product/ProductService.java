@@ -70,22 +70,23 @@ public class ProductService {
         }
     }
 
-    public void updateProduct(String productName, String newCategory, String newUnitOfMeasure, double newUnitPrice) {
-        String sql = "UPDATE Dim_Product SET category = ?, unit_of_measure = ?, unit_price = ? WHERE product_name = ?";
+    public void updateProduct(int productId, String newProductName, String newCategory, String newUnitOfMeasure, double newUnitPrice) {
+        String sql = "UPDATE Dim_Product SET product_name = ?, category = ?, unit_of_measure = ?, unit_price = ? WHERE product_id = ?";
 
         try (Connection conn = DBConnection.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setString(1, newCategory);
-            pstmt.setString(2, newUnitOfMeasure);
-            pstmt.setDouble(3, newUnitPrice);
-            pstmt.setString(4, productName);
+            pstmt.setString(1, newProductName);
+            pstmt.setString(2, newCategory);
+            pstmt.setString(3, newUnitOfMeasure);
+            pstmt.setDouble(4, newUnitPrice);
+            pstmt.setInt(5, productId);
 
             int rowsAffected = pstmt.executeUpdate();
             if (rowsAffected > 0) {
                 System.out.println("Producto actualizado correctamente.");
             } else {
-                System.out.println("No se encontró el producto: " + productName);
+                System.out.println("No se encontró el producto con ID: " + productId);
             }
 
         } catch (SQLException e) {
@@ -157,18 +158,21 @@ public class ProductService {
                     break;
 
                 case "4":
-                    System.out.print("Ingrese el nombre del producto a actualizar: ");
-                    String productToUpdate = scanner.nextLine();
+                    System.out.print("Ingrese el ID del producto a actualizar: ");
+                    String productIdToUpdate = scanner.nextLine();
+                    System.out.print("Ingrese el nuevo nombre del producto: ");
+                    String updatedProductName = scanner.nextLine();
                     System.out.print("Ingrese la nueva categoría: ");
                     String updatedCategory = scanner.nextLine();
                     System.out.print("Ingrese la nueva unidad de medida: ");
                     String updatedUnitOfMeasure = scanner.nextLine();
                     System.out.print("Ingrese el nuevo precio unitario: ");
                     try {
+                        int productId = Integer.parseInt(productIdToUpdate);
                         double updatedUnitPrice = Double.parseDouble(scanner.nextLine());
-                        updateProduct(productToUpdate, updatedCategory, updatedUnitOfMeasure, updatedUnitPrice);
+                        updateProduct(productId, updatedProductName, updatedCategory, updatedUnitOfMeasure, updatedUnitPrice);
                     } catch (NumberFormatException e) {
-                        System.out.println("Precio unitario inválido. Por favor, ingrese un número válido.");
+                        System.out.println("ID o precio unitario inválido. Por favor, ingrese valores válidos.");
                     }
                     break;
 

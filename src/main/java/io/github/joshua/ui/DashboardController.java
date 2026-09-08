@@ -52,7 +52,7 @@ public class DashboardController {
     private final DatabaseResetService resetService = new DatabaseResetService();
     private final SqlConsoleService sqlService = new SqlConsoleService();
 
-    @FXML private void initialize() { showDashboard(); }
+    @FXML private void initialize() { dataTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN); showDashboard(); }
     @FXML private void showDashboard() { currentTable = null; currentData = null; pageTitle.setText("Resumen del negocio"); tableCaption.setText("Selecciona una sección para administrar sus registros."); dataTable.getItems().clear(); dataTable.getColumns().clear(); setTableActions(false); refreshDashboard(); }
     @FXML private void showProducts() { showTable("Dim_Product"); }
     @FXML private void showCustomers() { showTable("Dim_Customer"); }
@@ -157,8 +157,10 @@ public class DashboardController {
             pageTitle.setText(LABELS.get(table));
             tableCaption.setText("Inventario | usa Filtrar para consultar por nombre de producto");
             setTableActions(table);
-            dataTable.getItems().clear();
-            dataTable.getColumns().clear();
+            Task<TableData> task = new Task<>() { protected TableData call() throws Exception { return readTable(queryService(table, null)); } };
+            task.setOnSucceeded(event -> { currentData = task.getValue(); dataTable.getColumns().setAll(currentData.columns); dataTable.setItems(currentData.rows); setConnected(); });
+            task.setOnFailed(event -> showError(task.getException()));
+            start(task);
             return;
         }
         currentTable = table; pageTitle.setText(LABELS.get(table)); tableCaption.setText(LABELS.get(table) + " | selecciona una fila para administrar"); setTableActions(table);
@@ -193,7 +195,7 @@ public class DashboardController {
 
     private void editRecord(ObservableList<String> selected) {
         List<String> labels = switch (currentTable) {
-            case "Dim_Product" -> selected == null ? List.of("Nombre", "Categoría", "Unidad", "Precio") : List.of("Categoría", "Unidad", "Precio");
+            case "Dim_Product" -> List.of("Nombre", "Categoría", "Unidad", "Precio");
             case "Dim_Customer" -> List.of("Nombre", "Correo", "Teléfono");
             case "Dim_Supplier" -> List.of("Nombre", "Contacto", "Teléfono", "Correo");
             case "Dim_ExpenseCategory" -> selected == null ? List.of("Nombre") : List.of("Nombre anterior", "Nombre nuevo");
@@ -208,20 +210,18 @@ public class DashboardController {
 
     private void fillServiceFields(ObservableList<String> selected, List<TextField> fields) {
         if (selected == null || currentData == null) return;
-        if (currentTable.equals("Dim_Product")) { fields.get(0).setText(value(selected, "category")); fields.get(1).setText(value(selected, "unit_of_measure")); fields.get(2).setText(value(selected, "unit_price")); }
+        if (currentTable.equals("Dim_Product")) { fields.get(0).setText(value(selected, "product_name")); fields.get(1).setText(value(selected, "category")); fields.get(2).setText(value(selected, "unit_of_measure")); fields.get(3).setText(value(selected, "unit_price")); }
         if (currentTable.equals("Dim_Customer")) { fields.get(0).setText(value(selected, "customer_name")); fields.get(1).setText(value(selected, "email")); fields.get(2).setText(value(selected, "phone")); }
         if (currentTable.equals("Dim_Supplier")) { fields.get(0).setText(value(selected, "supplier_name")); fields.get(1).setText(value(selected, "contact_name")); fields.get(2).setText(value(selected, "phone")); fields.get(3).setText(value(selected, "email")); }
         if (currentTable.equals("Dim_ExpenseCategory")) fields.get(0).setText(value(selected, "category_name"));
-        if (currentTable.equals("Inventory")) { fields.get(0).setText(productNameFor(selected)); fields.get(1).setText(value(selected, "minimum_stock")); fields.get(2).setText(value(selected, "quantity_on_hand")); }
+        if (currentTable.equals("Inventory")) { fields.get(0).setText(value(selected, "product_name")); fields.get(1).setText(value(selected, "minimum_stock")); fields.get(2).setText(value(selected, "quantity_on_hand")); }
     }
 
     private String value(ObservableList<String> row, String column) { return row.get(currentData.columnNames.indexOf(column)); }
-    private String productNameFor(ObservableList<String> row) { String id = value(row, "product_id"); try { QueryResult result = sqlService.query("SELECT product_name FROM Dim_Product WHERE product_id = " + id); return result.rows().isEmpty() ? "" : result.rows().get(0).get(0); } catch (Exception error) { return ""; } }
-
     private void invokeServiceEdit(ObservableList<String> selected, List<TextField> fields) {
         try {
             switch (currentTable) {
-                case "Dim_Product" -> { if (selected == null) productService.insertProductAndCreateInventory(fields.get(0).getText(), fields.get(1).getText(), fields.get(2).getText(), Double.parseDouble(fields.get(3).getText())); else productService.updateProduct(value(selected, "product_name"), fields.get(0).getText(), fields.get(1).getText(), Double.parseDouble(fields.get(2).getText())); }
+                case "Dim_Product" -> { if (selected == null) productService.insertProductAndCreateInventory(fields.get(0).getText(), fields.get(1).getText(), fields.get(2).getText(), Double.parseDouble(fields.get(3).getText())); else productService.updateProduct(Integer.parseInt(value(selected, "product_id")), fields.get(0).getText(), fields.get(1).getText(), fields.get(2).getText(), Double.parseDouble(fields.get(3).getText())); }
                 case "Dim_Customer" -> { if (selected == null) customerService.insertCustomer(fields.get(0).getText(), fields.get(1).getText(), fields.get(2).getText()); else customerService.updateCustomer(value(selected, "email"), fields.get(0).getText(), fields.get(2).getText()); }
                 case "Dim_Supplier" -> { if (selected == null) supplierService.insertSupplier(fields.get(0).getText(), fields.get(1).getText(), fields.get(2).getText(), fields.get(3).getText()); else supplierService.updateSupplier(value(selected, "email"), fields.get(0).getText(), fields.get(1).getText(), fields.get(2).getText()); }
                 case "Dim_ExpenseCategory" -> { if (selected == null) categoryService.insertExpenseCategory(fields.get(0).getText()); else categoryService.updateExpenseCategory(fields.get(0).getText(), fields.get(1).getText()); }
@@ -273,7 +273,7 @@ public class DashboardController {
     }
 
     private long count(String table) throws Exception { QueryResult result = sqlService.query("SELECT COUNT(*) AS total FROM " + table); return Long.parseLong(result.rows().get(0).get(0)); }
-    private static TableData readTable(QueryResult result) { List<String> names = result.columns(); ObservableList<TableColumn<ObservableList<String>, String>> columns = FXCollections.observableArrayList(); for (int i = 0; i < names.size(); i++) { int index = i; TableColumn<ObservableList<String>, String> column = new TableColumn<>(names.get(i)); column.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().get(index))); column.setPrefWidth(150); columns.add(column); } ObservableList<ObservableList<String>> rows = FXCollections.observableArrayList(); for (List<String> sourceRow : result.rows()) rows.add(FXCollections.observableArrayList(sourceRow)); return new TableData(names, columns, rows); }
+    private static TableData readTable(QueryResult result) { List<String> names = result.columns(); ObservableList<TableColumn<ObservableList<String>, String>> columns = FXCollections.observableArrayList(); for (int i = 0; i < names.size(); i++) { int index = i; TableColumn<ObservableList<String>, String> column = new TableColumn<>(names.get(i)); column.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().get(index))); column.setMinWidth(90); column.setPrefWidth(150); columns.add(column); } ObservableList<ObservableList<String>> rows = FXCollections.observableArrayList(); for (List<String> sourceRow : result.rows()) rows.add(FXCollections.observableArrayList(sourceRow)); return new TableData(names, columns, rows); }
     private GridPane formGrid(List<String> labels) { GridPane grid = new GridPane(); grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(10)); for (int i = 0; i < labels.size(); i++) { grid.add(new Label(labels.get(i)), 0, i); grid.add(new TextField(), 1, i); } return grid; }
     private List<TextField> fieldsOf(GridPane grid) { return grid.getChildren().stream().filter(node -> node instanceof TextField).map(node -> (TextField) node).toList(); }
     private boolean showForm(String title, GridPane grid) { Dialog<ButtonType> dialog = new Dialog<>(); dialog.setTitle(title); dialog.getDialogPane().setContent(grid); ButtonType save = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE); dialog.getDialogPane().getButtonTypes().addAll(save, ButtonType.CANCEL); return dialog.showAndWait().orElse(ButtonType.CANCEL) == save; }

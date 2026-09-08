@@ -5,7 +5,6 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
@@ -73,9 +72,7 @@
                     <Button fx:id="queryButton" text="Filtrar" onAction="#filterCurrent" styleClass="secondary-button" />
                     <Button text="Exportar Excel" onAction="#exportCurrent" styleClass="secondary-button" />
                 </HBox>
-                <ScrollPane hbarPolicy="ALWAYS" vbarPolicy="NEVER" fitToHeight="true" VBox.vgrow="ALWAYS" styleClass="table-scroll">
-                    <content><TableView fx:id="dataTable" prefWidth="1100" /></content>
-                </ScrollPane>
+                <TableView fx:id="dataTable" VBox.vgrow="ALWAYS" />
             </VBox>
         </VBox>
     </center>

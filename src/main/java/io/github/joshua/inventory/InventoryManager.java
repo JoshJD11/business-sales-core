@@ -119,9 +119,11 @@ public class InventoryManager {
     }
 
     public QueryResult queryProductStock(String productName) throws SQLException {
-        String sql = "SELECT quantity_on_hand, minimum_stock FROM Dim_Product p RIGHT JOIN Inventory i ON p.product_id = i.product_id WHERE product_name = ?";
+        String sql = "SELECT i.inventory_id, p.product_name, i.quantity_on_hand, i.minimum_stock, i.last_updated "
+                + "FROM Dim_Product p LEFT JOIN Inventory i ON p.product_id = i.product_id"
+                + (productName == null ? "" : " WHERE p.product_name = ?");
         try (Connection conn = DBConnection.getConnection(); PreparedStatement statement = conn.prepareStatement(sql)) {
-            statement.setString(1, productName);
+            if (productName != null) statement.setString(1, productName);
             try (ResultSet resultSet = statement.executeQuery()) { return QueryResult.from(resultSet); }
         }
     }
