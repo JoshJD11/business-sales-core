@@ -2,28 +2,45 @@
 
 CURRENT_IP=$(curl -s ifconfig.me)
 
-LAST_IP_FILE=".last_ip"
+echo "IP pública actual: $CURRENT_IP"
 
-if [ -f "$LAST_IP_FILE" ] && [ "$(cat $LAST_IP_FILE)" == "$CURRENT_IP" ]; then
+AZURE_IP=$(az sql server firewall-rule show \
+    --resource-group business-sales-rg \
+    --server joshuaroot \
+    --name MiPC \
+    --query startIpAddress \
+    --output tsv 2>/dev/null)
 
-    echo "La IP no ha cambiado ($CURRENT_IP). No es necesario actualizar el firewall."
+if [ "$AZURE_IP" = "$CURRENT_IP" ]; then
+
+    echo "El firewall ya tiene la IP correcta: $AZURE_IP"
 
 else
 
-    echo "Actualizando firewall con la IP actual: $CURRENT_IP"
+    echo "La IP del firewall no coincide."
+    echo "IP en Azure: $AZURE_IP"
+    echo "IP actual:   $CURRENT_IP"
+    echo "Actualizando firewall..."
 
-    az sql server firewall-rule create \
+    az sql server firewall-rule update \
         --resource-group business-sales-rg \
         --server joshuaroot \
         --name MiPC \
         --start-ip-address "$CURRENT_IP" \
         --end-ip-address "$CURRENT_IP"
 
-    echo "$CURRENT_IP" > "$LAST_IP_FILE"
+    if [ $? -ne 0 ]; then
+        echo "ERROR: No se pudo actualizar el firewall."
+        exit 1
+    fi
+
+    echo "Firewall actualizado correctamente."
 
 fi
 
 docker build -t business-sales-core .
+
+mkdir -p exports
 
 docker run -it \
     --env-file .env \
