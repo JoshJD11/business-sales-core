@@ -18,6 +18,10 @@ public class DatabaseResetService {
             return;
         }
 
+        resetDatabaseConfirmed();
+    }
+
+    public void resetDatabaseConfirmed() {
         String[] dropStatements = {
             "IF OBJECT_ID('Fact_Sales', 'U') IS NOT NULL DROP TABLE Fact_Sales;",
             "IF OBJECT_ID('Fact_MaterialExpenses', 'U') IS NOT NULL DROP TABLE Fact_MaterialExpenses;",

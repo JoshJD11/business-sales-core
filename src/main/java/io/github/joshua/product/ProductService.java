@@ -5,13 +5,12 @@ import java.io.IOException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
 
-import io.github.joshua.util.AppSettings;
-import io.github.joshua.util.ExcelExportService;
-
-import com.jakewharton.fliptables.FlipTableConverters;
+import io.github.joshua.util.QueryResultPresenter;
+import io.github.joshua.util.QueryResult;
 
 public class ProductService {
 
@@ -22,24 +21,29 @@ public class ProductService {
     }
 
     public void consultAllProducts() {
-        String sql = "SELECT * FROM Dim_Product";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            var rs = pstmt.executeQuery();
-            if (AppSettings.isExportSelectsToExcel()) {
-                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
-            } else {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            }
-
+        try {
+            QueryResultPresenter.present(queryAllProducts());
         } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el producto: " + e.getMessage());
         }
     }
 
-    private void insertProductAndCreateInventory(String productName, String category, String unitOfMeasure, double unitPrice) {
+    public QueryResult queryAllProducts() throws SQLException {
+        return query("SELECT * FROM Dim_Product");
+    }
+
+    public QueryResult queryProductsByName(String productName) throws SQLException {
+        return query("SELECT * FROM Dim_Product WHERE product_name = ?", productName);
+    }
+
+    private QueryResult query(String sql, String... values) throws SQLException {
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement statement = conn.prepareStatement(sql)) {
+            for (int index = 0; index < values.length; index++) statement.setString(index + 1, values[index]);
+            try (ResultSet resultSet = statement.executeQuery()) { return QueryResult.from(resultSet); }
+        }
+    }
+
+    public void insertProductAndCreateInventory(String productName, String category, String unitOfMeasure, double unitPrice) {
         String sql = "{CALL InsertProductAndCreateInventory(?, ?, ?, ?)}";
 
         try (Connection conn = DBConnection.getConnection();
@@ -59,25 +63,14 @@ public class ProductService {
     }
 
     private void consultProductByName(String productName) {
-        String sql = "SELECT * FROM Dim_Product WHERE product_name = ?";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, productName);
-            var rs = pstmt.executeQuery();
-            if (AppSettings.isExportSelectsToExcel()) {
-                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
-            } else {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            }
-
+        try {
+            QueryResultPresenter.present(queryProductsByName(productName));
         } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el producto: " + e.getMessage());
         }
     }
 
-    private void updateProduct(String productName, String newCategory, String newUnitOfMeasure, double newUnitPrice) {
+    public void updateProduct(String productName, String newCategory, String newUnitOfMeasure, double newUnitPrice) {
         String sql = "UPDATE Dim_Product SET category = ?, unit_of_measure = ?, unit_price = ? WHERE product_name = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -100,7 +93,7 @@ public class ProductService {
         }
     }
 
-    private void deleteProduct(String productName) {
+    public void deleteProduct(String productName) {
         String sql = "DELETE FROM Dim_Product WHERE product_name = ?";
 
         try (Connection conn = DBConnection.getConnection();

@@ -4,10 +4,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
-import io.github.joshua.util.AppSettings;
-import io.github.joshua.util.ExcelExportService;
-
-import com.jakewharton.fliptables.FlipTableConverters;
+import io.github.joshua.util.QueryResultPresenter;
+import io.github.joshua.util.QueryResult;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -22,45 +20,35 @@ public class ExpenseCategory {
     }
 
     private void consultAllCategories() {
-        String sql = "SELECT * FROM Fact_MaterialExpenses";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            var rs = stmt.executeQuery();
-            if (AppSettings.isExportSelectsToExcel()) {
-                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
-            } else {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            }
-
+        try {
+            QueryResultPresenter.present(queryAllCategories());
         } catch (SQLException | IOException e) {
-            System.out.println("Error al consultar los gastos por categoría: " + e.getMessage());
+            System.out.println("Error al consultar las categorías: " + e.getMessage());
+        }
+    }
+
+    public QueryResult queryAllCategories() throws SQLException { return query("SELECT * FROM Dim_ExpenseCategory", null); }
+    public QueryResult queryCategoryByName(String categoryName) throws SQLException { return query("SELECT * FROM Dim_ExpenseCategory WHERE category_name = ?", categoryName); }
+    public QueryResult queryExpensesByCategory(String categoryName) throws SQLException {
+        return query("SELECT fme.* FROM Fact_MaterialExpenses fme JOIN Dim_ExpenseCategory dec ON fme.category_id = dec.category_id WHERE dec.category_name = ?", categoryName);
+    }
+    private QueryResult query(String sql, String value) throws SQLException {
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement statement = conn.prepareStatement(sql)) {
+            if (value != null) statement.setString(1, value);
+            try (ResultSet resultSet = statement.executeQuery()) { return QueryResult.from(resultSet); }
         }
     }
 
     private void consultExpenseCategory(String categoryName) {
-        String sql = "SELECT * FROM Fact_MaterialExpenses WHERE category_name = ?";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, categoryName);
-
-            var rs = stmt.executeQuery();
-            if (AppSettings.isExportSelectsToExcel()) {
-                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
-            } else {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            }
-
+        try {
+            QueryResultPresenter.present(queryCategoryByName(categoryName));
         } catch (SQLException | IOException e) {
-            System.out.println("Error al consultar los gastos por categoría: " + e.getMessage());
+            System.out.println("Error al consultar la categoría: " + e.getMessage());
         }
     }
 
-    private void deleteExpenseCategory(String categoryName) {
-        String sql = "DELETE FROM Fact_MaterialExpenses WHERE category_name = ?";
+    public void deleteExpenseCategory(String categoryName) {
+        String sql = "DELETE FROM Dim_ExpenseCategory WHERE category_name = ?";
 
         try (Connection conn = DBConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -69,9 +57,9 @@ public class ExpenseCategory {
 
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected > 0) {
-                System.out.println("Gastos eliminados correctamente para la categoría: " + categoryName);
+                System.out.println("Categoría eliminada correctamente: " + categoryName);
             } else {
-                System.out.println("No se encontraron gastos para la categoría: " + categoryName);
+                System.out.println("No se encontró la categoría: " + categoryName);
             }
 
         } catch (SQLException e) {
@@ -79,8 +67,8 @@ public class ExpenseCategory {
         }
     }
 
-    private void updateExpenseCategory(String oldCategoryName, String newCategoryName) {
-        String sql = "UPDATE Fact_MaterialExpenses SET category_name = ? WHERE category_name = ?";
+    public void updateExpenseCategory(String oldCategoryName, String newCategoryName) {
+        String sql = "UPDATE Dim_ExpenseCategory SET category_name = ? WHERE category_name = ?";
 
         try (Connection conn = DBConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -90,9 +78,9 @@ public class ExpenseCategory {
 
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected > 0) {
-                System.out.println("Categoría de gasto actualizada correctamente de " + oldCategoryName + " a " + newCategoryName);
+                System.out.println("Categoría actualizada correctamente de " + oldCategoryName + " a " + newCategoryName);
             } else {
-                System.out.println("No se encontraron gastos para la categoría: " + oldCategoryName);
+                System.out.println("No se encontró la categoría: " + oldCategoryName);
             }
 
         } catch (SQLException e) {
@@ -100,7 +88,7 @@ public class ExpenseCategory {
         }
     }
 
-    private void insertExpenseCategory(String categoryName) {
+    public void insertExpenseCategory(String categoryName) {
         String checkSql = "SELECT 1 FROM Dim_ExpenseCategory WHERE category_name = ?";
         String insertSql = "INSERT INTO Dim_ExpenseCategory (category_name) VALUES (?)";
 
@@ -165,7 +153,7 @@ public class ExpenseCategory {
                     String categoryNameToUpdate = scanner.nextLine();
                     System.out.print("Ingrese el nuevo nombre que tendrá la categoría");
                     String newCategoryName = scanner.nextLine();
-                    updateExpenseCategory(newCategoryName, categoryNameToUpdate);
+                    updateExpenseCategory(categoryNameToUpdate, newCategoryName);
                     break;
                 case "5":
                     System.out.print("Ingrese el nombre de la categoría a eliminar: ");

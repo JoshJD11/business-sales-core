@@ -1,5 +1,5 @@
 package io.github.joshua.notification;
-import io.github.cdimascio.dotenv.Dotenv;
+import io.github.joshua.util.AppConfig;
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
@@ -14,8 +14,8 @@ public class EmailNotificationSender implements NotificationSender {
     private final Session session;
 
     public EmailNotificationSender() {
-        this.fromEmail = Dotenv.load().get("GMAIL_ADDRESS");
-        this.appPassword = Dotenv.load().get("GMAIL_APP_PASSWORD");
+        this.fromEmail = AppConfig.get("GMAIL_ADDRESS");
+        this.appPassword = AppConfig.get("GMAIL_APP_PASSWORD");
 
         Properties props = new Properties();
         props.put("mail.smtp.auth", "true");

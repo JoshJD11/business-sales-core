@@ -6,9 +6,8 @@ import java.sql.SQLException;
 import java.util.Scanner;
 import java.io.IOException;
 import java.sql.Connection;
-import com.jakewharton.fliptables.FlipTableConverters;
-import io.github.joshua.util.AppSettings;
-import io.github.joshua.util.ExcelExportService;
+import io.github.joshua.util.QueryResultPresenter;
+import io.github.joshua.util.QueryResult;
 
 import io.github.joshua.database.DBConnection;
 
@@ -20,7 +19,7 @@ public class CustomerService {
         this.scanner = new Scanner(System.in);
     }
 
-    private void insertCustomer(String customerName, String email, String phone) {
+    public void insertCustomer(String customerName, String email, String phone) {
         String sql = "INSERT INTO Dim_Customer (customer_name, email, phone) VALUES (?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection();
@@ -42,7 +41,7 @@ public class CustomerService {
         }
     }
 
-    private void updateCustomer(String email, String newCustomerName, String newPhone) {
+    public void updateCustomer(String email, String newCustomerName, String newPhone) {
         String sql = "UPDATE Dim_Customer SET customer_name = ?, phone = ? WHERE email = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -65,44 +64,36 @@ public class CustomerService {
     }
 
     private void consultAllCustomers() {
-        String sql = "SELECT * FROM Dim_Customer";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            ResultSet rs = stmt.executeQuery();
-            if (AppSettings.isExportSelectsToExcel()) {
-                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
-            } else {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            }
-
+        try {
+            QueryResultPresenter.present(queryAllCustomers());
         } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el cliente: " + e.getMessage());
+        }
+    }
+
+    public QueryResult queryAllCustomers() throws SQLException { return queryAll("SELECT * FROM Dim_Customer"); }
+    public QueryResult queryCustomerByEmail(String email) throws SQLException { return query("SELECT * FROM Dim_Customer WHERE email = ?", email); }
+    private QueryResult query(String sql, String value) throws SQLException {
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement statement = conn.prepareStatement(sql)) {
+            statement.setString(1, value);
+            try (ResultSet resultSet = statement.executeQuery()) { return QueryResult.from(resultSet); }
+        }
+    }
+    private QueryResult queryAll(String sql) throws SQLException {
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement statement = conn.prepareStatement(sql); ResultSet resultSet = statement.executeQuery()) {
+            return QueryResult.from(resultSet);
         }
     }
 
     private void consultCustomerByEmail(String email) {
-        String sql = "SELECT * FROM Dim_Customer WHERE email = ?";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, email);
-
-            ResultSet rs = stmt.executeQuery();
-            if (AppSettings.isExportSelectsToExcel()) {
-                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
-            } else {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            }
-
+        try {
+            QueryResultPresenter.present(queryCustomerByEmail(email));
         } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el cliente: " + e.getMessage());
         }
     }
 
-    private void deleteCustomer(String email) {
+    public void deleteCustomer(String email) {
         String sql = "DELETE FROM Dim_Customer WHERE email = ?";
 
         try (Connection conn = DBConnection.getConnection();

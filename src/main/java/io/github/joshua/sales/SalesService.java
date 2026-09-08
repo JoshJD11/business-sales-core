@@ -8,11 +8,10 @@ import java.sql.Types;
 import java.util.Scanner;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import io.github.joshua.util.AppSettings;
-import io.github.joshua.util.ExcelExportService;
+import io.github.joshua.util.QueryResultPresenter;
+import io.github.joshua.util.QueryResult;
 
 import io.github.joshua.database.DBConnection;
-import com.jakewharton.fliptables.FlipTableConverters;
 
 
 public class SalesService {
@@ -24,24 +23,23 @@ public class SalesService {
     }
 
     public void consultAllSales() {
-        String sql = "SELECT * FROM Fact_Sales";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            ResultSet rs = stmt.executeQuery();
-            if (AppSettings.isExportSelectsToExcel()) {
-                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
-            } else {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            }
-
+        try {
+            QueryResultPresenter.present(queryAllSales());
         } catch (SQLException | IOException e) {
             System.out.println("Error al consultar las ventas: " + e.getMessage());
         }
     }
 
-    private void insertSale(String productName, int quantity, String paymentMethod, String customerEmail) {
+    public QueryResult queryAllSales() throws SQLException { return query("SELECT * FROM Fact_Sales", null); }
+    public QueryResult querySalesByProduct(String productName) throws SQLException { return query("SELECT * FROM Fact_Sales fs JOIN Dim_Product dp ON fs.product_id = dp.product_id WHERE dp.product_name = ?", productName); }
+    private QueryResult query(String sql, String value) throws SQLException {
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement statement = conn.prepareStatement(sql)) {
+            if (value != null) statement.setString(1, value);
+            try (ResultSet resultSet = statement.executeQuery()) { return QueryResult.from(resultSet); }
+        }
+    }
+
+    public void insertSale(String productName, int quantity, String paymentMethod, String customerEmail) {
         String sql = "{CALL InsertSale(?, ?, ?, ?)}";
 
         try (Connection conn = DBConnection.getConnection();
@@ -66,26 +64,14 @@ public class SalesService {
     }
 
     private void consultSalesByProduct(String productName) {
-        String sql = "SELECT * FROM Fact_Sales fs JOIN Dim_Product dp ON fs.product_id = dp.product_id WHERE dp.product_name = ?";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, productName);
-
-            ResultSet rs = stmt.executeQuery();
-            if (AppSettings.isExportSelectsToExcel()) {
-                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
-            } else {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            }
-
+        try {
+            QueryResultPresenter.present(querySalesByProduct(productName));
         } catch (SQLException | IOException e) {
             System.out.println("Error al consultar las ventas: " + e.getMessage());
         }
     }
 
-    private void deleteSale(int saleId) {
+    public void deleteSale(int saleId) {
         String sql = "DELETE FROM Fact_Sales WHERE sale_id = ?";
 
         try (Connection conn = DBConnection.getConnection();

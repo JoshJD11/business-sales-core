@@ -1,5 +1,5 @@
 package io.github.joshua.notification;
-import io.github.cdimascio.dotenv.Dotenv;
+import io.github.joshua.util.AppConfig;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.web.client.RestTemplate;
 import com.greenapi.pkg.api.GreenApi;
@@ -12,8 +12,8 @@ public class WhatsAppNotificationSender implements NotificationSender {
 
     public WhatsAppNotificationSender() {
         RestTemplate restTemplate = new RestTemplateBuilder().build();
-        String instanceId = Dotenv.load().get("GREENAPI_INSTANCE_ID");
-        String token = Dotenv.load().get("GREENAPI_TOKEN");
+        String instanceId = AppConfig.get("GREENAPI_INSTANCE_ID");
+        String token = AppConfig.get("GREENAPI_TOKEN");
 
         this.greenApi = new GreenApi(
             restTemplate,

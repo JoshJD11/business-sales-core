@@ -1,14 +1,27 @@
 package io.github.joshua.admin;
 
-import com.jakewharton.fliptables.FlipTableConverters;
 import io.github.joshua.database.DBConnection;
 
 import java.io.IOException;
 import java.sql.*;
 import io.github.joshua.util.AppSettings;
 import io.github.joshua.util.ExcelExportService;
+import io.github.joshua.util.QueryResult;
+import io.github.joshua.util.QueryResultPresenter;
 
 public class SqlConsoleService {
+
+    public QueryResult query(String sql) throws SQLException {
+        try (Connection conn = DBConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            return QueryResult.from(rs);
+        }
+    }
+
+    public void exportQuery(String sql, String fileName) throws SQLException, IOException {
+        ExcelExportService.exportToExcel(query(sql), fileName);
+    }
 
     public void executeCustomQuery(String sql) {
         String trimmedSql = sql.trim().toUpperCase();
@@ -18,23 +31,32 @@ public class SqlConsoleService {
             return;
         }
 
-        try (Connection conn = DBConnection.getConnection();
-            Statement stmt = conn.createStatement()) {
-
+        try {
             if (trimmedSql.startsWith("SELECT")) {
-                ResultSet rs = stmt.executeQuery(sql);
                 if (AppSettings.isExportSelectsToExcel()) {
-                    ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
+                    exportQuery(sql, "resultado_" + System.currentTimeMillis() + ".xlsx");
                 } else {
-                    System.out.println(FlipTableConverters.fromResultSet(rs));
+                    executeConsoleSelect(sql);
                 }
-            } else {
+                return;
+            }
+
+            try (Connection conn = DBConnection.getConnection();
+                 Statement stmt = conn.createStatement()) {
                 int rows = stmt.executeUpdate(sql);
                 System.out.println("Consulta ejecutada. Filas afectadas: " + rows);
             }
 
         } catch (SQLException | IOException e) {
             System.out.println("Error al ejecutar la consulta: " + e.getMessage());
+        }
+    }
+
+    private void executeConsoleSelect(String sql) throws SQLException {
+        try (Connection conn = DBConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet resultSet = stmt.executeQuery(sql)) {
+            QueryResultPresenter.printTable(resultSet);
         }
     }
 

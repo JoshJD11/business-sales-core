@@ -260,7 +260,7 @@ Everything — checking/updating the Azure SQL firewall rule, building the Docke
 **What `run.sh` does, step by step:**
 
 1. Gets the machine's current public IP (`curl ifconfig.me`).
-2. Asks Azure directly what IP is currently set on the `MiPC` firewall rule (`az sql server firewall-rule show`) and compares it to the current IP — only calling `az sql server firewall-rule update` if they differ, to avoid unnecessary Azure CLI calls.
+2. Always updates the Azure SQL `MiPC` firewall rule with that IP.
 3. Builds the Docker image (`docker build -t business-sales-core .`).
 4. Creates the local `exports/` folder if it doesn't exist yet.
 5. Runs the container interactively, passing in `.env` (both as `--env-file` and as a read-only mounted file) and mounting `exports/` so generated Excel files persist outside the container.

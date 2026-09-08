@@ -4,12 +4,11 @@ import io.github.joshua.database.DBConnection;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
-import io.github.joshua.util.AppSettings;
-import io.github.joshua.util.ExcelExportService;
-
-import com.jakewharton.fliptables.FlipTableConverters;
+import io.github.joshua.util.QueryResultPresenter;
+import io.github.joshua.util.QueryResult;
 
 
 public class SupplierService {
@@ -20,7 +19,7 @@ public class SupplierService {
         this.scanner = new Scanner(System.in);
     }
 
-    private void insertSupplier(String supplierName, String contactName, String phone, String email) {
+    public void insertSupplier(String supplierName, String contactName, String phone, String email) {
         String sql = "INSERT INTO Dim_Supplier (supplier_name, contact_name, phone, email) VALUES (?, ?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection();
@@ -44,62 +43,40 @@ public class SupplierService {
     }
 
     private void consultAllSuppliers() {
-        String sql = "SELECT * FROM Dim_Supplier";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            var rs = pstmt.executeQuery();
-            if (AppSettings.isExportSelectsToExcel()) {
-                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
-            } else {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            }
-
+        try {
+            QueryResultPresenter.present(queryAllSuppliers());
         } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el proveedor: " + e.getMessage());
         }
     }
 
+    public QueryResult queryAllSuppliers() throws SQLException { return query("SELECT * FROM Dim_Supplier", null); }
+    public QueryResult querySupplierByEmail(String email) throws SQLException { return query("SELECT * FROM Dim_Supplier WHERE email = ?", email); }
+    public QueryResult querySupplierByProduct(String productName) throws SQLException { return query("SELECT s.supplier_name, s.contact_name, s.phone, s.email FROM Dim_Supplier s JOIN Fact_MaterialExpenses fme ON s.supplier_id = fme.supplier_id JOIN Dim_Product dp ON fme.product_id = dp.product_id WHERE dp.product_name = ?", productName); }
+    private QueryResult query(String sql, String value) throws SQLException {
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement statement = conn.prepareStatement(sql)) {
+            if (value != null) statement.setString(1, value);
+            try (ResultSet resultSet = statement.executeQuery()) { return QueryResult.from(resultSet); }
+        }
+    }
+
     private void consultSupplierByEmail(String email) {
-        String sql = "SELECT * FROM Dim_Supplier WHERE email = ?";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, email);
-            var rs = pstmt.executeQuery();
-            if (AppSettings.isExportSelectsToExcel()) {
-                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
-            } else {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            }
-
+        try {
+            QueryResultPresenter.present(querySupplierByEmail(email));
         } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el proveedor: " + e.getMessage());
         }
     }
 
     private void consultSupplierByProduct(String productName) {
-        String sql = "SELECT s.supplier_name, s.contact_name, s.phone, s.email FROM Dim_Supplier s JOIN Fact_MaterialExpenses fme ON s.supplier_id = fme.supplier_id JOIN Dim_Product dp ON fme.product_id = dp.product_id WHERE dp.product_name = ?";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            pstmt.setString(1, productName);
-            var rs = pstmt.executeQuery();
-            if (AppSettings.isExportSelectsToExcel()) {
-                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
-            } else {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            }
-
+        try {
+            QueryResultPresenter.present(querySupplierByProduct(productName));
         } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el proveedor por producto: " + e.getMessage());
         }
     }
 
-    private void updateSupplier(String email, String newSupplierName, String newContactName, String newPhone) {
+    public void updateSupplier(String email, String newSupplierName, String newContactName, String newPhone) {
         String sql = "UPDATE Dim_Supplier SET supplier_name = ?, contact_name = ?, phone = ? WHERE email = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -122,7 +99,7 @@ public class SupplierService {
         }
     }
 
-    private void deleteSupplierByEmail(String email) {
+    public void deleteSupplierByEmail(String email) {
         String sql = "DELETE FROM Dim_Supplier WHERE email = ?";
 
         try (Connection conn = DBConnection.getConnection();

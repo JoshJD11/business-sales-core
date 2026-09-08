@@ -1,5 +1,5 @@
 package io.github.joshua.user;
-import io.github.cdimascio.dotenv.Dotenv;
+import io.github.joshua.util.AppConfig;
 
 public class UserAuth {
 
@@ -7,9 +7,8 @@ public class UserAuth {
     private String password;
 
     public UserAuth() {
-        Dotenv dotenv = Dotenv.load();
-        this.username = dotenv.get("APP_USER");
-        this.password = dotenv.get("APP_PASSWORD");
+        this.username = AppConfig.get("APP_USER");
+        this.password = AppConfig.get("APP_PASSWORD");
     }
 
     public boolean login(String username, String password) {

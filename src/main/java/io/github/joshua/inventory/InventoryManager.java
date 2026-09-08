@@ -10,10 +10,9 @@ import io.github.joshua.database.DBConnection;
 import io.github.joshua.notification.EmailNotificationSender;
 import io.github.joshua.notification.NotificationSender;
 import io.github.joshua.notification.WhatsAppNotificationSender;
-import io.github.cdimascio.dotenv.Dotenv;
-import com.jakewharton.fliptables.FlipTableConverters;
-import io.github.joshua.util.AppSettings;
-import io.github.joshua.util.ExcelExportService;
+import io.github.joshua.util.AppConfig;
+import io.github.joshua.util.QueryResultPresenter;
+import io.github.joshua.util.QueryResult;
 
 
 public class InventoryManager {
@@ -56,16 +55,16 @@ public class InventoryManager {
         if (isStackLimitExceeded(productName)) {
             String message = "El producto " + productName + " ha alcanzado su límite de pila.";
             if (notificationSender instanceof EmailNotificationSender) {
-                String recipientEmail = Dotenv.load().get("GMAIL_ADDRESS");
+                String recipientEmail = AppConfig.get("GMAIL_ADDRESS");
                 notificationSender.sendNotification(recipientEmail, message);
             } else {
-                String recipientPhoneNumber = Dotenv.load().get("WHATSAPP_PHONE_NUMBER"); // <country_code><number>@c.us
+                String recipientPhoneNumber = AppConfig.get("WHATSAPP_PHONE_NUMBER"); // <country_code><number>@c.us
                 notificationSender.sendNotification(recipientPhoneNumber, message);
             }
         }
     }
 
-    private void updateMinimumStock(String productName, int newMinimumStock) {
+    public void updateMinimumStock(String productName, int newMinimumStock) {
         String sql = "UPDATE Dim_Product SET minimum_stock = ? WHERE product_name = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -88,7 +87,7 @@ public class InventoryManager {
         }
     }
 
-    private void updateQuantityOnHand(String productName, int newQuantity) {
+    public void updateQuantityOnHand(String productName, int newQuantity) {
         String sql = "UPDATE Inventory SET quantity_on_hand = ? WHERE product_id = (SELECT product_id FROM Dim_Product WHERE product_name = ?)";
 
         try (Connection conn = DBConnection.getConnection();
@@ -112,22 +111,18 @@ public class InventoryManager {
     }
 
     private void consultProductStock(String productName) {
-        String sql = "SELECT quantity_on_hand, minimum_stock FROM Dim_Product p RIGHT JOIN Inventory i ON p.product_id = i.product_id WHERE product_name = ?";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, productName);
-
-            ResultSet rs = stmt.executeQuery();
-            if (AppSettings.isExportSelectsToExcel()) {
-                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
-            } else {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            }
-
+        try {
+            QueryResultPresenter.present(queryProductStock(productName));
         } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el stock del producto: " + e.getMessage());
+        }
+    }
+
+    public QueryResult queryProductStock(String productName) throws SQLException {
+        String sql = "SELECT quantity_on_hand, minimum_stock FROM Dim_Product p RIGHT JOIN Inventory i ON p.product_id = i.product_id WHERE product_name = ?";
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement statement = conn.prepareStatement(sql)) {
+            statement.setString(1, productName);
+            try (ResultSet resultSet = statement.executeQuery()) { return QueryResult.from(resultSet); }
         }
     }
 

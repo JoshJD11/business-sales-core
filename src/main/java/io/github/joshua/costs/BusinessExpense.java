@@ -2,13 +2,13 @@ package io.github.joshua.costs;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
 
 import io.github.joshua.database.DBConnection;
-import com.jakewharton.fliptables.FlipTableConverters;
-import io.github.joshua.util.AppSettings;
-import io.github.joshua.util.ExcelExportService;
+import io.github.joshua.util.QueryResultPresenter;
+import io.github.joshua.util.QueryResult;
 
 
 public class BusinessExpense {
@@ -20,25 +20,23 @@ public class BusinessExpense {
     }
 
     private void consultAllExpenses() {
-        String sql = "SELECT * FROM Fact_MaterialExpenses";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            var rs = stmt.executeQuery();
-
-            if (AppSettings.isExportSelectsToExcel()) {
-                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
-            } else {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            }
-
+        try {
+            QueryResultPresenter.present(queryAllExpenses());
         } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el gasto: " + e.getMessage());
         }
     }
+
+    public QueryResult queryAllExpenses() throws SQLException { return query("SELECT * FROM Fact_MaterialExpenses", null); }
+    public QueryResult queryExpensesByProduct(String productName) throws SQLException { return query("SELECT * FROM Fact_MaterialExpenses WHERE product_name = ?", productName); }
+    private QueryResult query(String sql, String value) throws SQLException {
+        try (Connection conn = DBConnection.getConnection(); PreparedStatement statement = conn.prepareStatement(sql)) {
+            if (value != null) statement.setString(1, value);
+            try (ResultSet resultSet = statement.executeQuery()) { return QueryResult.from(resultSet); }
+        }
+    }
     
-    private void insertExpense(String categoryName, String productName, String supplierEmail, String description, double amount, String paymentMethod, int quantity) {
+    public void insertExpense(String categoryName, String productName, String supplierEmail, String description, double amount, String paymentMethod, int quantity) {
         String sql = "CALL InsertExpense(?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection();
@@ -61,26 +59,14 @@ public class BusinessExpense {
     }
 
     private void consultExpenseByProduct(String productName) {
-        String sql = "SELECT * FROM Fact_MaterialExpenses WHERE product_name = ?";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, productName);
-
-            var rs = stmt.executeQuery();
-            if (AppSettings.isExportSelectsToExcel()) {
-                ExcelExportService.exportToExcel(rs, "resultado_" + System.currentTimeMillis() + ".xlsx");
-            } else {
-                System.out.println(FlipTableConverters.fromResultSet(rs));
-            }
-
+        try {
+            QueryResultPresenter.present(queryExpensesByProduct(productName));
         } catch (SQLException | IOException e) {
             System.out.println("Error al consultar el gasto: " + e.getMessage());
         }
     }
 
-    private void deleteExpense(int expenseId) {
+    public void deleteExpense(int expenseId) {
         String sql = "DELETE FROM Fact_MaterialExpenses WHERE expense_id = ?";
 
         try (Connection conn = DBConnection.getConnection();

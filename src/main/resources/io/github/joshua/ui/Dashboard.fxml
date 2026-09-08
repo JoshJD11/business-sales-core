@@ -5,6 +5,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
@@ -58,7 +59,7 @@
                     <Label text="VENTAS" styleClass="metric-label" />
                     <Label fx:id="salesCount" text="-" styleClass="metric-value" />
                 </VBox>
-                <VBox HBox.hgrow="ALWAYS" styleClass="metric-card accent-card">
+                <VBox HBox.hgrow="ALWAYS" styleClass="metric-card">
                     <Label text="REGISTROS DE INVENTARIO" styleClass="metric-label" />
                     <Label fx:id="stockCount" text="-" styleClass="metric-value" />
                 </VBox>
@@ -69,9 +70,12 @@
                     <Button fx:id="createButton" text="Nuevo" onAction="#createRecord" styleClass="primary-button" />
                     <Button fx:id="editButton" text="Editar seleccionado" onAction="#editSelected" styleClass="secondary-button" />
                     <Button fx:id="deleteButton" text="Eliminar seleccionado" onAction="#deleteSelected" styleClass="danger-button" />
+                    <Button fx:id="queryButton" text="Filtrar" onAction="#filterCurrent" styleClass="secondary-button" />
                     <Button text="Exportar Excel" onAction="#exportCurrent" styleClass="secondary-button" />
                 </HBox>
-                <TableView fx:id="dataTable" VBox.vgrow="ALWAYS" />
+                <ScrollPane hbarPolicy="ALWAYS" vbarPolicy="NEVER" fitToHeight="true" VBox.vgrow="ALWAYS" styleClass="table-scroll">
+                    <content><TableView fx:id="dataTable" prefWidth="1100" /></content>
+                </ScrollPane>
             </VBox>
         </VBox>
     </center>

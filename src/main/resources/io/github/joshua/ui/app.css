@@ -30,8 +30,10 @@
 .danger-button { -fx-background-color: #fff4f1; -fx-border-color: #edc4ba; -fx-text-fill: #a44343; -fx-padding: 9 15; -fx-background-radius: 6; -fx-border-radius: 6; }
 .danger-button:hover { -fx-background-color: #f8dfdf; }
 .metric-card, .table-panel { -fx-background-color: white; -fx-background-radius: 10; -fx-padding: 18; -fx-border-color: #e1e9e5; -fx-border-radius: 10; }
-.accent-card { -fx-background-color: #e8f2ed; -fx-border-color: #c5ded3; }
 .metric-value { -fx-text-fill: #173f37; -fx-font-size: 28px; -fx-font-weight: bold; }
 .table-view { -fx-background-color: white; -fx-border-color: #e1e9e5; -fx-border-radius: 6; }
+.table-scroll { -fx-background-color: white; -fx-border-color: #e1e9e5; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 0; }
+.table-scroll > .viewport { -fx-background-color: white; }
+.table-scroll > .scroll-bar:horizontal { -fx-pref-height: 12px; }
 .table-view .column-header-background { -fx-background-color: #edf4f1; }
 .table-view .column-header .label { -fx-text-fill: #315a50; -fx-font-weight: bold; }
