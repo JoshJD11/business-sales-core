@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="io.github.joshua.ui.LoginController" alignment="CENTER" spacing="16"
+      styleClass="login-page">
+    <padding><Insets top="40" right="40" bottom="40" left="40" /></padding>
+    <Label text="BUSINESS SALES CORE" styleClass="brand" />
+    <Label text="Panel de gestión para tu negocio" styleClass="login-subtitle" />
+    <VBox maxWidth="360" spacing="10" styleClass="login-card">
+        <Label text="Iniciar sesión" styleClass="section-title" />
+        <Label text="Usuario" styleClass="field-label" />
+        <TextField fx:id="usernameField" promptText="Escribe tu usuario" onAction="#login" />
+        <Label text="Contraseña" styleClass="field-label" />
+        <PasswordField fx:id="passwordField" promptText="Escribe tu contraseña" onAction="#login" />
+        <Label fx:id="errorLabel" wrapText="true" styleClass="error-label" />
+        <Button text="Entrar al panel" onAction="#login" maxWidth="Infinity" styleClass="primary-button" />
+    </VBox>
+    <Label text="Conecta tus operaciones, inventario y clientes en un solo lugar." styleClass="muted-label" />
+</VBox>

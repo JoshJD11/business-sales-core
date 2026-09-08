@@ -153,6 +153,8 @@ DB_URL=jdbc:sqlserver://joshuaroot.database.windows.net:1433
 DB_NAME=business-sales-db
 DB_USER=rootjoshua
 DB_PASSWORD=your_password_here
+APP_USER=admin
+APP_PASSWORD=change_this_password
 
 # WhatsApp (Green API)
 GREENAPI_INSTANCE_ID=your_instance_id
@@ -191,6 +193,61 @@ az login
 The app is packaged as a fat jar (`maven-shade-plugin`, all dependencies bundled, `io.github.joshua.Main` set as the entry point) and built into a Docker image via a multi-stage build (`maven:3.9-eclipse-temurin-21` to compile, `eclipse-temurin:21-jre` to run).
 
 Because the app is interactive (reads username/password and menu choices from `System.in`), it's always run with `-it`. `.env` is never baked into the image — it's supplied at container start, and `exports/` is mounted as a volume so Excel files generated inside the container land on the host filesystem.
+
+### Desktop GUI (JavaFX + FXML)
+
+The default entry point now opens the JavaFX desktop panel. The layouts live in
+`src/main/resources/io/github/joshua/ui/` and can be opened directly in Scene Builder:
+
+- `Login.fxml` — administrator login screen.
+- `Dashboard.fxml` — navigation, business metrics, and database tables.
+
+Create or update `.env` with `APP_USER` and `APP_PASSWORD`, then run:
+
+```bash
+./run.sh gui
+```
+
+You can also start the GUI directly with `mvn clean javafx:run`.
+
+After logging in, use the left navigation to load each database table. The
+`Actualizar` button reloads the current view. The window opens even when Azure
+SQL is unavailable; the connection badge reports the problem instead of hiding
+it.
+
+The GUI also includes the terminal administration workflows:
+
+- Create, edit and delete records for products, customers, suppliers, categories and inventory.
+- Register sales and expenses through the existing `InsertSale` and `InsertExpense` procedures.
+- Delete sales and expenses from their selected rows.
+- Export the active table or custom query results to `exports/*.xlsx`.
+- Enable automatic Excel export for custom `SELECT` queries.
+- Execute custom SQL while destructive `DROP`, `TRUNCATE` and `DELETE` statements remain blocked.
+- Empty the database from the dedicated action, requiring the exact confirmation `CONFIRMAR`.
+
+To test the GUI manually:
+
+1. Confirm that `.env` contains valid `APP_USER`, `APP_PASSWORD`, and database values.
+2. Run `mvn clean javafx:run`.
+3. Log in with those credentials.
+4. Confirm that the connection badge becomes `Base de datos conectada`.
+5. Open Productos, Clientes, Inventario, Ventas, and Gastos and press `Actualizar`.
+6. Change one record through the existing console workflow or SQL tool, then refresh the corresponding GUI view and verify the new value appears.
+
+Scene Builder can preview either FXML file without starting the database. Use the
+FXML controller names already declared in each file; no generated controller code
+is required.
+
+### Console fallback
+
+The original interactive menu remains available for deployments or operations
+that still require the console:
+
+```bash
+./run.sh console
+```
+
+The console mode builds and starts the Docker image with `--console`.
 
 ## Running the project
 

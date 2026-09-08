@@ -1,0 +1,37 @@
+.root {
+    -fx-font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+    -fx-background-color: #f5f7f8;
+}
+.login-page { -fx-background-color: linear-gradient(to bottom right, #eef7f3, #f9f4ec); }
+.brand, .sidebar-brand { -fx-text-fill: #123c35; -fx-font-weight: bold; -fx-letter-spacing: 1.4px; }
+.brand { -fx-font-size: 24px; }
+.login-subtitle, .muted-label { -fx-text-fill: #6b7775; }
+.login-card { -fx-background-color: white; -fx-background-radius: 12; -fx-padding: 28; -fx-effect: dropshadow(gaussian, #183b3520, 20, 0.15, 0, 7); }
+.section-title { -fx-text-fill: #173f37; -fx-font-size: 17px; -fx-font-weight: bold; }
+.field-label, .metric-label, .sidebar-kicker { -fx-text-fill: #72807d; -fx-font-size: 11px; -fx-font-weight: bold; -fx-letter-spacing: 1px; }
+.text-field, .password-field { -fx-background-color: #f4f7f6; -fx-border-color: #dbe5e1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 11; }
+.primary-button { -fx-background-color: #176b5b; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 12; -fx-background-radius: 6; }
+.error-label { -fx-text-fill: #b34747; }
+.app-shell { -fx-background-color: #f5f7f8; }
+.sidebar { -fx-background-color: #123c35; }
+.sidebar-brand { -fx-text-fill: #f2d39b; -fx-font-size: 17px; }
+.sidebar-kicker { -fx-text-fill: #9cbab0; -fx-padding: 6 0 18 0; }
+.nav-button { -fx-background-color: transparent; -fx-text-fill: #dceae5; -fx-alignment: CENTER_LEFT; -fx-padding: 11 14; -fx-background-radius: 6; -fx-font-size: 13px; }
+.nav-button:hover { -fx-background-color: #285b50; }
+.danger-nav-button { -fx-background-color: transparent; -fx-text-fill: #f3b4a6; -fx-alignment: CENTER_LEFT; -fx-padding: 11 14; -fx-background-radius: 6; -fx-font-size: 13px; }
+.danger-nav-button:hover { -fx-background-color: #6e3e3a; }
+.sidebar-footer { -fx-text-fill: #9cbab0; -fx-font-size: 11px; }
+.content { -fx-background-color: #f5f7f8; }
+.page-title { -fx-text-fill: #173f37; -fx-font-size: 28px; -fx-font-weight: bold; }
+.connection-label { -fx-padding: 8 12; -fx-background-radius: 20; -fx-font-size: 12px; }
+.connection-ok { -fx-text-fill: #176b5b; -fx-background-color: #dcefe8; }
+.connection-error { -fx-text-fill: #a44343; -fx-background-color: #f8dfdf; }
+.secondary-button { -fx-background-color: white; -fx-border-color: #c8d8d2; -fx-text-fill: #176b5b; -fx-padding: 9 15; -fx-background-radius: 6; -fx-border-radius: 6; }
+.danger-button { -fx-background-color: #fff4f1; -fx-border-color: #edc4ba; -fx-text-fill: #a44343; -fx-padding: 9 15; -fx-background-radius: 6; -fx-border-radius: 6; }
+.danger-button:hover { -fx-background-color: #f8dfdf; }
+.metric-card, .table-panel { -fx-background-color: white; -fx-background-radius: 10; -fx-padding: 18; -fx-border-color: #e1e9e5; -fx-border-radius: 10; }
+.accent-card { -fx-background-color: #e8f2ed; -fx-border-color: #c5ded3; }
+.metric-value { -fx-text-fill: #173f37; -fx-font-size: 28px; -fx-font-weight: bold; }
+.table-view { -fx-background-color: white; -fx-border-color: #e1e9e5; -fx-border-radius: 6; }
+.table-view .column-header-background { -fx-background-color: #edf4f1; }
+.table-view .column-header .label { -fx-text-fill: #315a50; -fx-font-weight: bold; }

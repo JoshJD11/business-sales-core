@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="io.github.joshua.ui.DashboardController" styleClass="app-shell">
+    <left>
+        <VBox prefWidth="230" spacing="8" styleClass="sidebar">
+            <padding><Insets top="28" right="18" bottom="24" left="18" /></padding>
+            <Label text="BUSINESS SALES" styleClass="sidebar-brand" />
+            <Label text="CENTRO DE OPERACIONES" styleClass="sidebar-kicker" />
+            <VBox spacing="5" VBox.vgrow="ALWAYS">
+                <Button text="Resumen" onAction="#showDashboard" styleClass="nav-button" maxWidth="Infinity" />
+                <Button text="Ventas" onAction="#showSales" styleClass="nav-button" maxWidth="Infinity" />
+                <Button text="Inventario" onAction="#showInventory" styleClass="nav-button" maxWidth="Infinity" />
+                <Button text="Productos" onAction="#showProducts" styleClass="nav-button" maxWidth="Infinity" />
+                <Button text="Clientes" onAction="#showCustomers" styleClass="nav-button" maxWidth="Infinity" />
+                <Button text="Proveedores" onAction="#showSuppliers" styleClass="nav-button" maxWidth="Infinity" />
+                <Button text="Categorías" onAction="#showCategories" styleClass="nav-button" maxWidth="Infinity" />
+                <Button text="Gastos" onAction="#showExpenses" styleClass="nav-button" maxWidth="Infinity" />
+                <Separator />
+                <Button text="Consulta SQL" onAction="#openSqlConsole" styleClass="nav-button" maxWidth="Infinity" />
+                <Button text="Vaciar base de datos" onAction="#resetDatabase" styleClass="danger-nav-button" maxWidth="Infinity" />
+            </VBox>
+            <Label fx:id="exportStatus" text="Exportación automática: desactivada" styleClass="sidebar-footer" />
+            <Button text="Cambiar exportación Excel" onAction="#toggleAutomaticExport" styleClass="nav-button" maxWidth="Infinity" />
+            <Label text="Sesión de administrador" styleClass="sidebar-footer" />
+        </VBox>
+    </left>
+    <center>
+        <VBox spacing="24" styleClass="content" VBox.vgrow="ALWAYS">
+            <padding><Insets top="30" right="36" bottom="30" left="36" /></padding>
+            <HBox alignment="CENTER_LEFT" spacing="16">
+                <VBox HBox.hgrow="ALWAYS" spacing="4">
+                    <Label fx:id="pageTitle" text="Resumen del negocio" styleClass="page-title" />
+                    <Label text="Una vista clara para tomar decisiones rápidas." styleClass="muted-label" />
+                </VBox>
+                <Label fx:id="connectionLabel" text="Comprobando conexión..." styleClass="connection-label" />
+                <Button text="Actualizar" onAction="#refresh" styleClass="secondary-button" />
+            </HBox>
+            <HBox spacing="14" styleClass="metrics-row">
+                <VBox HBox.hgrow="ALWAYS" styleClass="metric-card">
+                    <Label text="PRODUCTOS" styleClass="metric-label" />
+                    <Label fx:id="productsCount" text="-" styleClass="metric-value" />
+                </VBox>
+                <VBox HBox.hgrow="ALWAYS" styleClass="metric-card">
+                    <Label text="CLIENTES" styleClass="metric-label" />
+                    <Label fx:id="customersCount" text="-" styleClass="metric-value" />
+                </VBox>
+                <VBox HBox.hgrow="ALWAYS" styleClass="metric-card">
+                    <Label text="VENTAS" styleClass="metric-label" />
+                    <Label fx:id="salesCount" text="-" styleClass="metric-value" />
+                </VBox>
+                <VBox HBox.hgrow="ALWAYS" styleClass="metric-card accent-card">
+                    <Label text="REGISTROS DE INVENTARIO" styleClass="metric-label" />
+                    <Label fx:id="stockCount" text="-" styleClass="metric-value" />
+                </VBox>
+            </HBox>
+            <VBox spacing="12" VBox.vgrow="ALWAYS" styleClass="table-panel">
+                <Label fx:id="tableCaption" text="Usa las secciones del menú para revisar la información registrada." styleClass="section-title" />
+                <HBox spacing="8">
+                    <Button fx:id="createButton" text="Nuevo" onAction="#createRecord" styleClass="primary-button" />
+                    <Button fx:id="editButton" text="Editar seleccionado" onAction="#editSelected" styleClass="secondary-button" />
+                    <Button fx:id="deleteButton" text="Eliminar seleccionado" onAction="#deleteSelected" styleClass="danger-button" />
+                    <Button text="Exportar Excel" onAction="#exportCurrent" styleClass="secondary-button" />
+                </HBox>
+                <TableView fx:id="dataTable" VBox.vgrow="ALWAYS" />
+            </VBox>
+        </VBox>
+    </center>
+</BorderPane>
