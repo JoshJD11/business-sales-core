@@ -217,7 +217,7 @@ public class DashboardController {
         if (currentTable.equals("Inventory")) { fields.get(0).setText(value(selected, "product_name")); fields.get(1).setText(value(selected, "minimum_stock")); fields.get(2).setText(value(selected, "quantity_on_hand")); }
     }
 
-    private String value(ObservableList<String> row, String column) { return row.get(currentData.columnNames.indexOf(column)); }
+    private String value(ObservableList<String> row, String column) { return row.get(currentData.columnNames.indexOf(column)); }                                                                              
     private void invokeServiceEdit(ObservableList<String> selected, List<TextField> fields) {
         try {
             switch (currentTable) {
