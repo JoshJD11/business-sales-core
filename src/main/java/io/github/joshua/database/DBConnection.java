@@ -19,7 +19,7 @@ public class DBConnection { // Azure SQL Database connection class
                 + ";encrypt=true"
                 + ";trustServerCertificate=false"
                 + ";hostNameInCertificate=*.database.windows.net"
-                + ";loginTimeout=15"
+                + ";loginTimeout=10"
                 + ";user=" + user
                 + ";password=" + password;
 
