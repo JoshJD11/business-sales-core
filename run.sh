@@ -1,4 +1,5 @@
 #!/bin/bash
+
 set -euo pipefail
 
 MODE="${1:-gui}"
@@ -9,22 +10,27 @@ if [[ "$MODE" != "gui" && "$MODE" != "console" ]]; then
 fi
 
 CURRENT_IP=$(curl -s ifconfig.me)
+LAST_IP_FILE=".last_ip"
 
 echo "IP pública actual: $CURRENT_IP"
 
-AZURE_IP=$(az sql server firewall-rule show \
-    --resource-group business-sales-rg \
-    --server joshuaroot \
-    --name MiPC \
-    --query startIpAddress \
-    --output tsv 2>/dev/null)
-
-if [[ "$AZURE_IP" == "$CURRENT_IP" ]]; then
-    echo "El firewall ya tiene la IP correcta: $AZURE_IP"
+if [[ -f "$LAST_IP_FILE" ]]; then
+    LAST_IP=$(cat "$LAST_IP_FILE")
 else
-    echo "La IP del firewall cambió."
-    echo "IP en Azure: $AZURE_IP"
-    echo "IP actual:   $CURRENT_IP"
+    LAST_IP=""
+fi
+
+if [[ "$LAST_IP" == "$CURRENT_IP" ]]; then
+    echo "La IP no ha cambiado ($CURRENT_IP). No es necesario actualizar el firewall."
+else
+    echo "La IP ha cambiado."
+
+    if [[ -n "$LAST_IP" ]]; then
+        echo "IP anterior: $LAST_IP"
+    else
+        echo "No existe una IP guardada anteriormente."
+    fi
+
     echo "Actualizando la regla de firewall MiPC..."
 
     az sql server firewall-rule update \
@@ -35,11 +41,17 @@ else
         --end-ip-address "$CURRENT_IP"
 
     echo "Firewall actualizado correctamente: $CURRENT_IP"
+
+    echo "$CURRENT_IP" > "$LAST_IP_FILE"
+
+    echo "IP guardada en $LAST_IP_FILE"
 fi
 
 if [[ "$MODE" == "gui" ]]; then
     echo "Iniciando la interfaz JavaFX local..."
+
     mvn clean javafx:run
+
     exit $?
 fi
 

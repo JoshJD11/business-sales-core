@@ -1,10 +1,10 @@
 # Business Sales Core
 
-Internal management system for a small/medium business: sales, expenses, inventory, and supplier/customer records, handled through a Java admin console connected to an Azure SQL database. Includes automated notifications via WhatsApp and email, ad-hoc SQL querying, Excel export, and a Docker-based run flow.
+Internal management system for a small/medium business: sales, expenses, inventory, and supplier/customer records, managed through a JavaFX desktop interface connected to an Azure SQL database. It also includes a console fallback, automated notifications via WhatsApp and email, ad-hoc SQL querying, Excel export, and a Docker-based run flow.
 
 ## What does this project do?
 
-It's a command-line application (no GUI, for now) built so the business owner/admin can:
+It's a Java desktop application built so the business owner/admin can use the graphical interface to:
 
 - Log in securely before accessing any functionality (limited login attempts).
 - Record sales tied to a product and, optionally, a customer — regardless of payment method (cash, SINPE, card).
@@ -12,7 +12,7 @@ It's a command-line application (no GUI, for now) built so the business owner/ad
 - Keep inventory in sync automatically: every sale reduces stock, with validation to prevent overselling.
 - Query, update, and delete sales, expenses, products, suppliers, and inventory records.
 - Send notifications (e.g. low-stock alerts, reminders) via WhatsApp and/or email.
-- Run ad-hoc SQL queries from the console, with destructive commands blocked by default.
+- Run ad-hoc SQL queries from the interface or the console, with destructive commands blocked by default.
 - Export any query result to a formatted Excel file, or toggle automatic Excel export for every `SELECT` run for the rest of the session.
 - Wipe all table data (with confirmation) to reset the database without dropping its structure.
 
@@ -24,6 +24,7 @@ It's a command-line application (no GUI, for now) built so the business owner/ad
 |---|---|
 | Language | Java 21 |
 | Build / dependencies | Maven, packaged as a fat jar via `maven-shade-plugin` |
+| Desktop interface | JavaFX + FXML |
 | Containerization | Docker (multi-stage build) |
 | Database | Azure SQL Database (relational) |
 | Connection driver | `mssql-jdbc` (Microsoft JDBC Driver for SQL Server) |
@@ -42,15 +43,18 @@ Organized by business domain, one package per area:
 ```
 src/main/java/io/github/joshua/
 ├── admin/            → SqlConsoleService (ad-hoc SQL), DatabaseResetService (wipe all tables)
-├── costs/            → ExpenseService (business expenses & supplier purchases)
-├── database/         → DBConnection, EnvConfig (connection and configuration)
+├── costs/            → BusinessExpense (business expenses & supplier purchases)
+├── customer/         → CustomerService (customer records)
+├── database/         → DBConnection (connection management)
+├── expensecategory/  → ExpenseCategory (expense categories)
+├── inventory/        → InventoryManager (stock management)
 ├── notification/     → NotificationSender (interface), WhatsAppNotificationSender, EmailNotificationSender
 ├── product/          → ProductService (insert/update/delete products, auto-creates inventory row)
-├── receipt/          → ReceiptService
 ├── sales/            → SalesService (insert/query/delete sales)
 ├── supplier/         → SupplierService (insert/query/update/delete suppliers)
+├── ui/               → LoginController, DashboardController, FXML views and CSS
 ├── user/             → UserAuth, UserMenu
-├── util/             → TablePrinter (console tables), ExcelExportService, AppSettings (runtime toggles)
+├── util/             → AppConfig, AppSettings, ExcelExportService, query result helpers
 └── Main.java           → application entry point
 ```
 
@@ -131,9 +135,9 @@ The app can send notifications (e.g. low-stock alerts) through two channels, bot
 2. Go to [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) and generate an app password.
 3. Copy the 16-character password **without spaces** — that's what goes in `.env`, not your regular Gmail password.
 
-## Admin console tools
+## Administration tools
 
-Available from the menu after logging in:
+Available from the dashboard after logging in, and through the console fallback where noted:
 
 - **Ad-hoc SQL queries** (`SqlConsoleService`) — run any `SELECT` and see it pretty-printed to the console (or exported to Excel, see below). `DROP`, `TRUNCATE`, and `DELETE` are blocked from this option as a safety net.
 - **Toggle Excel export** (`AppSettings`) — an in-memory, session-wide switch: once turned on, every `SELECT` result (from the SQL console or from other queries in the app) is written to an `.xlsx` file under `exports/` instead of being printed, until turned off again. This resets to off every time the program restarts.
@@ -251,19 +255,25 @@ The console mode builds and starts the Docker image with `--console`.
 
 ## Running the project
 
-Everything — checking/updating the Azure SQL firewall rule, building the Docker image, and launching the container — is handled by a single script:
+The default mode launches the JavaFX desktop interface. The script also checks and updates the Azure SQL firewall rule before starting the application:
 
 ```bash
 ./run.sh
 ```
 
-**What `run.sh` does, step by step:**
+To use the legacy console workflow inside Docker instead:
+
+```bash
+./run.sh console
+```
+
+**What `run.sh` does in GUI mode:**
 
 1. Gets the machine's current public IP (`curl ifconfig.me`).
-2. Always updates the Azure SQL `MiPC` firewall rule with that IP.
-3. Builds the Docker image (`docker build -t business-sales-core .`).
-4. Creates the local `exports/` folder if it doesn't exist yet.
-5. Runs the container interactively, passing in `.env` (both as `--env-file` and as a read-only mounted file) and mounting `exports/` so generated Excel files persist outside the container.
+2. Updates the Azure SQL `MiPC` firewall rule when the IP has changed.
+3. Starts the JavaFX application with `mvn clean javafx:run`.
+
+In console mode, the script builds the Docker image, creates the local `exports/` folder, and runs the container interactively with `.env` and `exports/` mounted.
 
 Enter the admin username and password when prompted (3-attempt limit before the program closes).
 
