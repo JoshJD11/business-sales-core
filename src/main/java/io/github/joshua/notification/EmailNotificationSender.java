@@ -32,8 +32,8 @@ public class EmailNotificationSender implements NotificationSender {
     }
 
     @Override
-    public void sendNotification(String recipient, String message) {
-        send(recipient, "AVISO SOBRE EL INVENTARIO DEL NEGOCIO", message);
+    public void sendNotification(String message) {
+        send(fromEmail, "AVISO SOBRE EL INVENTARIO DEL NEGOCIO", message);
     }
 
     public void send(String recipient, String subject, String body) {

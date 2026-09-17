@@ -18,6 +18,8 @@
 .sidebar-kicker { -fx-text-fill: #9cbab0; -fx-padding: 6 0 18 0; }
 .nav-button { -fx-background-color: transparent; -fx-text-fill: #dceae5; -fx-alignment: CENTER_LEFT; -fx-padding: 11 14; -fx-background-radius: 6; -fx-font-size: 13px; }
 .nav-button:hover { -fx-background-color: #285b50; }
+.notification-button { -fx-background-color: #f2d39b; -fx-text-fill: #123c35; -fx-alignment: CENTER_LEFT; -fx-padding: 11 14; -fx-background-radius: 6; -fx-font-size: 13px; -fx-font-weight: bold; }
+.notification-button:hover { -fx-background-color: #f7dfb4; }
 .danger-nav-button { -fx-background-color: transparent; -fx-text-fill: #f3b4a6; -fx-alignment: CENTER_LEFT; -fx-padding: 11 14; -fx-background-radius: 6; -fx-font-size: 13px; }
 .danger-nav-button:hover { -fx-background-color: #6e3e3a; }
 .sidebar-footer { -fx-text-fill: #9cbab0; -fx-font-size: 11px; }

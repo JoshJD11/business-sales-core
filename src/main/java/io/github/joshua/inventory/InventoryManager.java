@@ -7,10 +7,7 @@ import java.sql.SQLException;
 import java.util.Scanner;
 
 import io.github.joshua.database.DBConnection;
-import io.github.joshua.notification.EmailNotificationSender;
 import io.github.joshua.notification.NotificationSender;
-import io.github.joshua.notification.WhatsAppNotificationSender;
-import io.github.joshua.util.AppConfig;
 import io.github.joshua.util.QueryResultPresenter;
 import io.github.joshua.util.QueryResult;
 
@@ -20,13 +17,13 @@ public class InventoryManager {
     private NotificationSender notificationSender;
     private Scanner scanner;
 
-    public InventoryManager(String notificationType) {
-        if (notificationType.equalsIgnoreCase("email")) {
-            this.notificationSender = new EmailNotificationSender();
-        } else {
-            this.notificationSender = new WhatsAppNotificationSender();
-        }
+    public InventoryManager(NotificationSender ns) {
+        setNotificationMethod(ns);
         this.scanner = new Scanner(System.in);
+    }
+
+    public void setNotificationMethod(NotificationSender ns) {
+        this.notificationSender = ns;
     }
 
     private boolean isStackLimitExceeded(String productName) {
@@ -54,13 +51,7 @@ public class InventoryManager {
     private void checkIfHaveToNotify(String productName) { // This only will notify email or whatsapp if the product has reached its stack limit, the idea is to never notify in other social media.
         if (isStackLimitExceeded(productName)) {
             String message = "El producto " + productName + " ha alcanzado su límite de pila.";
-            if (notificationSender instanceof EmailNotificationSender) {
-                String recipientEmail = AppConfig.get("GMAIL_ADDRESS");
-                notificationSender.sendNotification(recipientEmail, message);
-            } else {
-                String recipientPhoneNumber = AppConfig.get("WHATSAPP_PHONE_NUMBER"); // <country_code><number>@c.us
-                notificationSender.sendNotification(recipientPhoneNumber, message);
-            }
+            notificationSender.sendNotification(message); // This only notify the admin (The email or wsp number that is in the env file).
         }
     }
 

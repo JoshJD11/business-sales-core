@@ -6,6 +6,8 @@ import io.github.joshua.costs.BusinessExpense;
 import io.github.joshua.customer.CustomerService;
 import io.github.joshua.expensecategory.ExpenseCategory;
 import io.github.joshua.inventory.InventoryManager;
+import io.github.joshua.notification.EmailNotificationSender;
+import io.github.joshua.notification.WhatsAppNotificationSender;
 import io.github.joshua.product.ProductService;
 import io.github.joshua.sales.SalesService;
 import io.github.joshua.supplier.SupplierService;
@@ -35,6 +37,7 @@ public class DashboardController {
     @FXML private Label stockCount;
     @FXML private Label tableCaption;
     @FXML private Label exportStatus;
+    @FXML private Button notificationButton;
     @FXML private TableView<ObservableList<String>> dataTable;
     @FXML private Button editButton;
     @FXML private Button deleteButton;
@@ -47,12 +50,13 @@ public class DashboardController {
     private final SupplierService supplierService = new SupplierService();
     private final SalesService salesService = new SalesService();
     private final BusinessExpense expenseService = new BusinessExpense();
-    private final InventoryManager inventoryService = new InventoryManager("whatsapp");
+    private final InventoryManager inventoryService = new InventoryManager(new EmailNotificationSender()); // Email notification sender by default
     private final ExpenseCategory categoryService = new ExpenseCategory();
     private final DatabaseResetService resetService = new DatabaseResetService();
     private final SqlConsoleService sqlService = new SqlConsoleService();
+    private boolean isNotifierEmail = true;
 
-    @FXML private void initialize() { dataTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN); showDashboard(); }
+    @FXML private void initialize() { dataTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN); updateNotificationButton(); showDashboard(); }
     @FXML private void showDashboard() { currentTable = null; currentData = null; pageTitle.setText("Resumen del negocio"); tableCaption.setText("Selecciona una sección para administrar sus registros."); dataTable.getItems().clear(); dataTable.getColumns().clear(); setTableActions(false); refreshDashboard(); }
     @FXML private void showProducts() { showTable("Dim_Product"); }
     @FXML private void showCustomers() { showTable("Dim_Customer"); }
@@ -132,6 +136,13 @@ public class DashboardController {
     }
 
     @FXML private void toggleAutomaticExport() { AppSettings.setExportSelectsToExcel(!AppSettings.isExportSelectsToExcel()); updateExportStatus(); }
+
+    @FXML private void toggleNotificationMethod() {
+        inventoryService.setNotificationMethod(isNotifierEmail ? new WhatsAppNotificationSender() : new EmailNotificationSender());
+        isNotifierEmail = !isNotifierEmail;
+        updateNotificationButton();
+        notifyUser(Alert.AlertType.INFORMATION, "Método de notificación actualizado", "Las alertas de inventario se enviarán por " + (isNotifierEmail ? "Email" : "WhatsApp") + ".");
+    }
 
     @FXML private void openSqlConsole() {
         Dialog<ButtonType> dialog = new Dialog<>(); dialog.setTitle("Consulta SQL personalizada"); dialog.setHeaderText("Ejecuta consultas de lectura o mantenimiento no destructivo");
@@ -217,7 +228,7 @@ public class DashboardController {
         if (currentTable.equals("Inventory")) { fields.get(0).setText(value(selected, "product_name")); fields.get(1).setText(value(selected, "minimum_stock")); fields.get(2).setText(value(selected, "quantity_on_hand")); }
     }
 
-    private String value(ObservableList<String> row, String column) { return row.get(currentData.columnNames.indexOf(column)); }                                                                              
+    private String value(ObservableList<String> row, String column) { return row.get(currentData.columnNames.indexOf(column)); }
     private void invokeServiceEdit(ObservableList<String> selected, List<TextField> fields) {
         try {
             switch (currentTable) {
@@ -300,6 +311,7 @@ public class DashboardController {
         button.setManaged(visible);
     }
     private void updateExportStatus() { exportStatus.setText(AppSettings.isExportSelectsToExcel() ? "Exportación automática: activa" : "Exportación automática: desactivada"); }
+    private void updateNotificationButton() { notificationButton.setText("Cambiar a " + (isNotifierEmail ? "WhatsApp" : "Email")); }
     private void setConnected() { connectionLabel.setText("Base de datos conectada"); connectionLabel.getStyleClass().setAll("connection-ok"); updateExportStatus(); }
     private void start(Task<?> task) { Thread thread = new Thread(task, "business-sales-ui-task"); thread.setDaemon(true); thread.start(); }
     private boolean confirm(String title, String message) { Alert alert = new Alert(Alert.AlertType.CONFIRMATION, message, ButtonType.CANCEL, ButtonType.OK); alert.setTitle(title); return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK; }

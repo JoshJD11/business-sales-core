@@ -25,7 +25,8 @@ public class WhatsAppNotificationSender implements NotificationSender {
     }
 
     @Override
-    public void sendNotification(String recipient,String message) {
+    public void sendNotification(String message) {
+        String recipient = AppConfig.get("WHATSAPP_PHONE_NUMBER");
         var response = greenApi.sending.sendMessage(
             OutgoingMessage.builder()
                 .chatId(recipient)

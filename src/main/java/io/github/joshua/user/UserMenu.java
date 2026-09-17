@@ -1,5 +1,7 @@
 package io.github.joshua.user;
 import io.github.joshua.inventory.InventoryManager;
+import io.github.joshua.notification.EmailNotificationSender;
+import io.github.joshua.notification.WhatsAppNotificationSender;
 import io.github.joshua.sales.SalesService;
 import io.github.joshua.costs.BusinessExpense;
 import java.util.Scanner;
@@ -27,11 +29,13 @@ public class UserMenu {
     private SqlConsoleService sqlConsoleService;
     private CustomerService customerService;
     private ExpenseCategory expenseCategory;
+    private boolean isNotifierEmail;
 
     public UserMenu() {
         this.userAuth = new UserAuth();
         this.scanner = new Scanner(System.in);
-        this.inventoryManager = new InventoryManager("whatsApp"); // whatsApp or email
+        this.inventoryManager = new InventoryManager(new EmailNotificationSender()); // Email notification sender by default
+        isNotifierEmail = true;
         this.salesService = new SalesService();
         this.businessExpense = new BusinessExpense();
         this.supplierService = new SupplierService();
@@ -81,7 +85,8 @@ public class UserMenu {
             System.out.println("8. Vaciar base de datos (¡Cuidado! Esto eliminará todos los registros)");
             System.out.println("9. Ejecutar consulta SQL personalizada (¡Cuidado! Esto puede afectar la base de datos)");
             System.out.println("10. " + (AppSettings.isExportSelectsToExcel()? "Desactivar " : "Activar ") + "exportación de consultas a excel");
-            System.out.println("11. Salir");
+            System.out.println("11. Cambiar método de notificación a " + (isNotifierEmail ? "Whatsapp" : "Email"));
+            System.out.println("12. Salir");
             System.out.print("Opción: ");
             String option = scanner.nextLine();
 
@@ -125,6 +130,10 @@ public class UserMenu {
                     AppSettings.setExportSelectsToExcel(!AppSettings.isExportSelectsToExcel());
                     break;
                 case "11":
+                    inventoryManager.setNotificationMethod((isNotifierEmail? new WhatsAppNotificationSender() : new EmailNotificationSender()));
+                    isNotifierEmail = !isNotifierEmail;
+                    break;
+                case "12":
                     exit = true;
                     System.out.println("Saliendo de la aplicación.");
                     break;
