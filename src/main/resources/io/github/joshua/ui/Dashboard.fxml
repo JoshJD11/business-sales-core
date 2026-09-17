@@ -31,7 +31,7 @@
             </VBox>
             <Label fx:id="exportStatus" text="Exportación automática: desactivada" styleClass="sidebar-footer" />
             <Button text="Cambiar exportación Excel" onAction="#toggleAutomaticExport" styleClass="nav-button" maxWidth="Infinity" />
-            <Button fx:id="notificationButton" text="Cambiar a WhatsApp" onAction="#toggleNotificationMethod" styleClass="notification-button" maxWidth="Infinity" />
+            <Button fx:id="notificationButton" text="Cambiar a WhatsApp" onAction="#toggleNotificationMethod" styleClass="nav-button" maxWidth="Infinity" />
             <Label text="Sesión de administrador" styleClass="sidebar-footer" />
         </VBox>
     </left>
