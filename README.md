@@ -23,7 +23,7 @@ It's a Java desktop application built so the business owner/admin can use the gr
 | Component | Tool |
 |---|---|
 | Language | Java 21 |
-| Build / dependencies | Maven, packaged as a fat jar via `maven-shade-plugin` |
+| Build / dependencies | Maven, packaged as a fat jar via `maven-shade-plugin`. Run through the bundled Maven Wrapper (`./mvnw`), so `mvn` does not need to be installed on the host |
 | Desktop interface | JavaFX + FXML |
 | Containerization | Docker (multi-stage build) |
 | Database | Azure SQL Database (relational) |
@@ -56,6 +56,10 @@ src/main/java/io/github/joshua/
 ├── user/             → UserAuth, UserMenu
 ├── util/             → AppConfig, AppSettings, ExcelExportService, query result helpers
 └── Main.java           → application entry point
+
+run.sh                 → build/run entry point (gui, console)
+install-shortcut.sh     → creates a desktop icon that launches run.sh
+mvnw / mvnw.cmd / .mvn/  → Maven Wrapper (no local Maven install required)
 ```
 
 **Pattern followed in each domain:**
@@ -192,6 +196,14 @@ curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 az login
 ```
 
+### 4. Maven Wrapper
+
+The project ships with the Maven Wrapper (`mvnw`, `mvnw.cmd`, `.mvn/`), so a local Maven installation is **not** required — `run.sh` calls `./mvnw` internally. Just make sure it's executable after cloning:
+
+```bash
+chmod +x mvnw run.sh
+```
+
 ## Docker
 
 The app is packaged as a fat jar (`maven-shade-plugin`, all dependencies bundled, `io.github.joshua.Main` set as the entry point) and built into a Docker image via a multi-stage build (`maven:3.9-eclipse-temurin-21` to compile, `eclipse-temurin:21-jre` to run).
@@ -212,7 +224,7 @@ Create or update `.env` with `APP_USER` and `APP_PASSWORD`, then run:
 ./run.sh gui
 ```
 
-You can also start the GUI directly with `mvn clean javafx:run`.
+You can also start the GUI directly with `./mvnw clean javafx:run`.
 
 After logging in, use the left navigation to load each database table. The
 `Actualizar` button reloads the current view. The window opens even when Azure
@@ -232,7 +244,7 @@ The GUI also includes the terminal administration workflows:
 To test the GUI manually:
 
 1. Confirm that `.env` contains valid `APP_USER`, `APP_PASSWORD`, and database values.
-2. Run `mvn clean javafx:run`.
+2. Run `./mvnw clean javafx:run`.
 3. Log in with those credentials.
 4. Confirm that the connection badge becomes `Base de datos conectada`.
 5. Open Productos, Clientes, Inventario, Ventas, and Gastos and press `Actualizar`.
@@ -271,11 +283,29 @@ To use the legacy console workflow inside Docker instead:
 
 1. Gets the machine's current public IP (`curl ifconfig.me`).
 2. Updates the Azure SQL `MiPC` firewall rule when the IP has changed.
-3. Starts the JavaFX application with `mvn clean javafx:run`.
+3. Starts the JavaFX application with `./mvnw clean javafx:run`, logging its output to `/tmp/business-sales-core.log` instead of the terminal (see [Desktop shortcut](#desktop-shortcut-linux) below).
 
 In console mode, the script builds the Docker image, creates the local `exports/` folder, and runs the container interactively with `.env` and `exports/` mounted.
 
 Enter the admin username and password when prompted (3-attempt limit before the program closes).
+
+## Desktop shortcut (Linux)
+
+To launch the app from a desktop icon instead of the terminal, run the installer script once after cloning the repo:
+
+```bash
+chmod +x install-shortcut.sh
+./install-shortcut.sh
+```
+
+This creates `~/Desktop/BusinessSalesCore.desktop`, pointing at `run.sh` and the app icon using the actual path where you cloned the repo — no manual editing of paths or usernames required, and it works the same way regardless of where the project ends up on disk.
+
+The generated shortcut:
+- Runs with `Terminal=false`, so no terminal window opens when you double-click it, and the process ends cleanly when you close the app window.
+- Logs its output to `/tmp/business-sales-core.log` — check that file if the app doesn't seem to start (e.g. missing `.env` values or a database connection issue).
+- Is marked as a trusted, executable launcher automatically where the desktop environment supports it (via `gio`); on some systems (or non-GNOME desktops) you may still need to right-click the icon once and allow launching manually.
+
+If you move or rename the project folder afterward, just re-run `./install-shortcut.sh` to regenerate the shortcut with the new path.
 
 ## Considerations and limitations
 

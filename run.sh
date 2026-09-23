@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
 MODE="${1:-gui}"
 
 if [[ "$MODE" != "gui" && "$MODE" != "console" ]]; then
@@ -50,9 +52,15 @@ fi
 if [[ "$MODE" == "gui" ]]; then
     echo "Iniciando la interfaz JavaFX local..."
 
-    mvn clean javafx:run
+    LOG_FILE="/tmp/business-sales-core.log"
+    ./mvnw clean javafx:run > "$LOG_FILE" 2>&1
+    EXIT_CODE=$?
 
-    exit $?
+    if [[ $EXIT_CODE -ne 0 ]]; then
+        echo "La app terminó con error. Revisa: $LOG_FILE"
+    fi
+
+    exit $EXIT_CODE
 fi
 
 docker build -t business-sales-core .
