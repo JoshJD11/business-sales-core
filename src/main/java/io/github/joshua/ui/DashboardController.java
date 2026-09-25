@@ -287,7 +287,7 @@ public class DashboardController {
 
     private void runExport(String sql) {
         Task<Void> task = new Task<>() { protected Void call() throws Exception { sqlService.exportQuery(sql, "resultado_" + System.currentTimeMillis() + ".xlsx"); return null; } };
-        task.setOnSucceeded(event -> notifyUser(Alert.AlertType.INFORMATION, "Exportación completada", "Archivo generado en la carpeta exports.")); task.setOnFailed(event -> showError(task.getException())); start(task, false);
+        task.setOnSucceeded(event -> notifyUser(Alert.AlertType.INFORMATION, "Exportación completada", "Archivo generado en la carpeta exports.")); task.setOnFailed(event -> showError(task.getException())); start(task, true);
     }
 
     private long count(String table) throws Exception { QueryResult result = sqlService.query("SELECT COUNT(*) AS total FROM " + table); return Long.parseLong(result.rows().get(0).get(0)); }
