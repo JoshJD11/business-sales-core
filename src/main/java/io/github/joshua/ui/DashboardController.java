@@ -16,10 +16,12 @@ import io.github.joshua.util.QueryResult;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import javafx.concurrent.WorkerStateEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 import java.util.List;
@@ -43,8 +45,13 @@ public class DashboardController {
     @FXML private Button deleteButton;
     @FXML private Button createButton;
     @FXML private Button queryButton;
+    @FXML private StackPane tableContent;
+    @FXML private VBox loadingOverlay;
+    @FXML private ProgressIndicator loadingIndicator;
+    @FXML private Label loadingLabel;
     private String currentTable;
     private TableData currentData;
+    private Task<?> activeTask;
     private final ProductService productService = new ProductService();
     private final CustomerService customerService = new CustomerService();
     private final SupplierService supplierService = new SupplierService();
@@ -280,7 +287,7 @@ public class DashboardController {
 
     private void runExport(String sql) {
         Task<Void> task = new Task<>() { protected Void call() throws Exception { sqlService.exportQuery(sql, "resultado_" + System.currentTimeMillis() + ".xlsx"); return null; } };
-        task.setOnSucceeded(event -> notifyUser(Alert.AlertType.INFORMATION, "Exportación completada", "Archivo generado en la carpeta exports.")); task.setOnFailed(event -> showError(task.getException())); start(task);
+        task.setOnSucceeded(event -> notifyUser(Alert.AlertType.INFORMATION, "Exportación completada", "Archivo generado en la carpeta exports.")); task.setOnFailed(event -> showError(task.getException())); start(task, false);
     }
 
     private long count(String table) throws Exception { QueryResult result = sqlService.query("SELECT COUNT(*) AS total FROM " + table); return Long.parseLong(result.rows().get(0).get(0)); }
@@ -313,7 +320,28 @@ public class DashboardController {
     private void updateExportStatus() { exportStatus.setText(AppSettings.isExportSelectsToExcel() ? "Exportación automática: activa" : "Exportación automática: desactivada"); }
     private void updateNotificationButton() { notificationButton.setText("Cambiar a " + (isNotifierEmail ? "WhatsApp" : "Email")); }
     private void setConnected() { connectionLabel.setText("Base de datos conectada"); connectionLabel.getStyleClass().setAll("connection-ok"); updateExportStatus(); }
-    private void start(Task<?> task) { Thread thread = new Thread(task, "business-sales-ui-task"); thread.setDaemon(true); thread.start(); }
+    private void start(Task<?> task) { start(task, true); }
+    private void start(Task<?> task, boolean showLoading) {
+        activeTask = task;
+        setLoading(showLoading);
+        task.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, event -> finishLoading(task));
+        task.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, event -> finishLoading(task));
+        task.addEventHandler(WorkerStateEvent.WORKER_STATE_CANCELLED, event -> finishLoading(task));
+        Thread thread = new Thread(task, "business-sales-ui-task");
+        thread.setDaemon(true);
+        thread.start();
+    }
+    private void finishLoading(Task<?> task) { if (task == activeTask) setLoading(false); }
+    private void setLoading(boolean loading) {
+        tableContent.setDisable(loading);
+        loadingOverlay.setVisible(loading);
+        loadingOverlay.setManaged(loading);
+        loadingIndicator.setVisible(loading);
+        loadingLabel.setVisible(loading);
+        loadingLabel.setManaged(loading);
+        tableContent.getStyleClass().setAll("table-content");
+        if (loading) tableContent.getStyleClass().add("table-content-loading");
+    }
     private boolean confirm(String title, String message) { Alert alert = new Alert(Alert.AlertType.CONFIRMATION, message, ButtonType.CANCEL, ButtonType.OK); alert.setTitle(title); return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK; }
     private void showError(Throwable error) { notifyUser(Alert.AlertType.ERROR, "No se pudo completar la operación", error == null ? "Error desconocido" : error.getMessage()); }
     private void notifyUser(Alert.AlertType type, String title, String message) { Alert alert = new Alert(type); alert.setTitle(title); alert.setHeaderText(null); alert.setContentText(message); alert.show(); }

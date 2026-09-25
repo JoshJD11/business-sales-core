@@ -4,7 +4,7 @@ set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DESKTOP_DIR="$HOME/Desktop"
 DESKTOP_FILE="$DESKTOP_DIR/BusinessSalesCore.desktop"
-ICON_SOURCE="$DIR/src/main/resources/io/github/joshua/ui/app-icon.png"
+ICON_SOURCE="$DIR/src/main/resources/app-icon.png"
 
 mkdir -p "$DESKTOP_DIR"
 

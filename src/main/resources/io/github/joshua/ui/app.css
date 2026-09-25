@@ -36,3 +36,7 @@
 .table-view { -fx-background-color: white; -fx-border-color: #e1e9e5; -fx-border-radius: 6; }
 .table-view .column-header-background { -fx-background-color: #edf4f1; }
 .table-view .column-header .label { -fx-text-fill: #315a50; -fx-font-weight: bold; }
+.table-content-loading .table-view { -fx-opacity: 0.45; }
+.loading-overlay { -fx-background-color: #ffffffdd; -fx-padding: 24; }
+.loading-overlay .progress-indicator { -fx-progress-color: #176b5b; }
+.loading-label { -fx-text-fill: #315a50; -fx-font-size: 13px; -fx-font-weight: bold; }
