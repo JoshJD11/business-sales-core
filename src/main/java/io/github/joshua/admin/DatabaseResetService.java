@@ -18,32 +18,38 @@ public class DatabaseResetService {
             return;
         }
 
-        resetDatabaseConfirmed();
-    }
-
-    public void resetDatabaseConfirmed() {
-        String[] dropStatements = {
-            "IF OBJECT_ID('Fact_Sales', 'U') IS NOT NULL DROP TABLE Fact_Sales;",
-            "IF OBJECT_ID('Fact_MaterialExpenses', 'U') IS NOT NULL DROP TABLE Fact_MaterialExpenses;",
-            "IF OBJECT_ID('Inventory', 'U') IS NOT NULL DROP TABLE Inventory;",
-            "IF OBJECT_ID('Dim_Customer', 'U') IS NOT NULL DROP TABLE Dim_Customer;",
-            "IF OBJECT_ID('Dim_Supplier', 'U') IS NOT NULL DROP TABLE Dim_Supplier;",
-            "IF OBJECT_ID('Dim_ExpenseCategory', 'U') IS NOT NULL DROP TABLE Dim_ExpenseCategory;",
-            "IF OBJECT_ID('Dim_Product', 'U') IS NOT NULL DROP TABLE Dim_Product;",
-            "IF OBJECT_ID('Dim_Date', 'U') IS NOT NULL DROP TABLE Dim_Date;"
-        };
-
-        try (Connection conn = DBConnection.getConnection();
-            Statement stmt = conn.createStatement()) {
-
-            for (String drop : dropStatements) {
-                stmt.execute(drop);
-            }
-
-            System.out.println("Base de datos vaciada correctamente.");
-
+        try {
+            resetDatabaseConfirmed();
         } catch (SQLException e) {
             System.out.println("Error al vaciar la base de datos: " + e.getMessage());
+        }
+    }
+
+    public void resetDatabaseConfirmed() throws SQLException {
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                deleteAllRows(conn);
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+        System.out.println("Base de datos vaciada correctamente.");
+    }
+
+    // Deletes every row (children before parents) and restarts identity counters; tables and procedures are kept.
+    public void deleteAllRows(Connection conn) throws SQLException {
+        String[] tables = {"Fact_Sales", "Fact_MaterialExpenses", "Inventory", "Dim_Customer", "Dim_Supplier", "Dim_ExpenseCategory", "Dim_Product", "Dim_Date"};
+
+        try (Statement stmt = conn.createStatement()) {
+            for (String table : tables) {
+                stmt.executeUpdate("DELETE FROM " + table);
+                // A table whose identity was never used would start at 0 after RESEED 0, so only reseed used ones.
+                stmt.execute("IF EXISTS (SELECT 1 FROM sys.identity_columns WHERE object_id = OBJECT_ID('" + table + "') AND last_value IS NOT NULL) "
+                        + "DBCC CHECKIDENT ('" + table + "', RESEED, 0) WITH NO_INFOMSGS");
+            }
         }
     }
 }

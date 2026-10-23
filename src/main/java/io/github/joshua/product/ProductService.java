@@ -43,7 +43,7 @@ public class ProductService {
         }
     }
 
-    public void insertProductAndCreateInventory(String productName, String category, String unitOfMeasure, double unitPrice) {
+    public void insertProductAndCreateInventory(String productName, String category, String unitOfMeasure, double unitPrice) throws SQLException {
         String sql = "{CALL InsertProductAndCreateInventory(?, ?, ?, ?)}";
 
         try (Connection conn = DBConnection.getConnection();
@@ -56,9 +56,6 @@ public class ProductService {
 
             stmt.execute();
             System.out.println("Producto insertado correctamente y registro de inventario creado.");
-
-        } catch (SQLException e) {
-            System.out.println("Error al insertar el producto: " + e.getMessage());
         }
     }
 
@@ -70,7 +67,7 @@ public class ProductService {
         }
     }
 
-    public void updateProduct(int productId, String newProductName, String newCategory, String newUnitOfMeasure, double newUnitPrice) {
+    public void updateProduct(int productId, String newProductName, String newCategory, String newUnitOfMeasure, double newUnitPrice) throws SQLException {
         String sql = "UPDATE Dim_Product SET product_name = ?, category = ?, unit_of_measure = ?, unit_price = ? WHERE product_id = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -82,35 +79,48 @@ public class ProductService {
             pstmt.setDouble(4, newUnitPrice);
             pstmt.setInt(5, productId);
 
-            int rowsAffected = pstmt.executeUpdate();
-            if (rowsAffected > 0) {
-                System.out.println("Producto actualizado correctamente.");
-            } else {
-                System.out.println("No se encontró el producto con ID: " + productId);
+            if (pstmt.executeUpdate() == 0) {
+                throw new SQLException("No se encontró el producto con ID: " + productId);
             }
-
-        } catch (SQLException e) {
-            System.out.println("Error al actualizar el producto: " + e.getMessage());
+            System.out.println("Producto actualizado correctamente.");
         }
     }
 
-    public void deleteProduct(String productName) {
-        String sql = "DELETE FROM Dim_Product WHERE product_name = ?";
+    public void deleteProduct(String productName) throws SQLException {
+        delete("DELETE FROM Dim_Product WHERE product_name = ?",
+                "SELECT COUNT(*) FROM Fact_Sales fs JOIN Dim_Product dp ON fs.product_id = dp.product_id WHERE dp.product_name = ?",
+                productName, "No se encontró el producto: " + productName);
+    }
 
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+    public void deleteProduct(int productId) throws SQLException {
+        delete("DELETE FROM Dim_Product WHERE product_id = ?",
+                "SELECT COUNT(*) FROM Fact_Sales WHERE product_id = ?",
+                productId, "No se encontró el producto con ID: " + productId);
+    }
 
-            pstmt.setString(1, productName);
+    // Fact_Sales cascades on product delete, so refuse instead of silently wiping the sales history.
+    private void delete(String sql, String salesCountSql, Object key, String notFoundMessage) throws SQLException {
+        try (Connection conn = DBConnection.getConnection()) {
 
-            int rowsAffected = pstmt.executeUpdate();
-            if (rowsAffected > 0) {
-                System.out.println("Producto e inventario del producto eliminados correctamente.");
-            } else {
-                System.out.println("No se encontró el producto: " + productName);
+            try (PreparedStatement countStmt = conn.prepareStatement(salesCountSql)) {
+                countStmt.setObject(1, key);
+                try (ResultSet rs = countStmt.executeQuery()) {
+                    rs.next();
+                    int sales = rs.getInt(1);
+                    if (sales > 0) {
+                        throw new SQLException("No se puede eliminar el producto: tiene " + sales + " venta(s) registrada(s). Elimina primero esas ventas para no perder el historial.");
+                    }
+                }
             }
 
-        } catch (SQLException e) {
-            System.out.println("Error al eliminar el producto: " + e.getMessage());
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setObject(1, key);
+
+                if (pstmt.executeUpdate() == 0) {
+                    throw new SQLException(notFoundMessage);
+                }
+                System.out.println("Producto e inventario del producto eliminados correctamente.");
+            }
         }
     }
 
@@ -154,6 +164,8 @@ public class ProductService {
                         insertProductAndCreateInventory(newProductName, newCategory, newUnitOfMeasure, newUnitPrice);
                     } catch (NumberFormatException e) {
                         System.out.println("Precio unitario inválido. Por favor, ingrese un número válido.");
+                    } catch (SQLException e) {
+                        System.out.println("Error al insertar el producto: " + e.getMessage());
                     }
                     break;
 
@@ -173,13 +185,19 @@ public class ProductService {
                         updateProduct(productId, updatedProductName, updatedCategory, updatedUnitOfMeasure, updatedUnitPrice);
                     } catch (NumberFormatException e) {
                         System.out.println("ID o precio unitario inválido. Por favor, ingrese valores válidos.");
+                    } catch (SQLException e) {
+                        System.out.println("Error al actualizar el producto: " + e.getMessage());
                     }
                     break;
 
                 case "5":
                     System.out.print("Ingrese el nombre del producto a eliminar: ");
                     String productToDelete = scanner.nextLine();
-                    deleteProduct(productToDelete);
+                    try {
+                        deleteProduct(productToDelete);
+                    } catch (SQLException e) {
+                        System.out.println("Error al eliminar el producto: " + e.getMessage());
+                    }
                     break;
 
                 case "6":

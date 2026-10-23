@@ -30,8 +30,11 @@ public class SalesService {
         }
     }
 
-    public QueryResult queryAllSales() throws SQLException { return query("SELECT * FROM Fact_Sales", null); }
-    public QueryResult querySalesByProduct(String productName) throws SQLException { return query("SELECT * FROM Fact_Sales fs JOIN Dim_Product dp ON fs.product_id = dp.product_id WHERE dp.product_name = ?", productName); }
+    private static final String SALES_SELECT = "SELECT fs.sale_id, fs.date_id, dp.product_name, dc.customer_name, dc.email AS customer_email, fs.quantity, fs.unit_price, fs.total_price, fs.payment_method, fs.created_at "
+            + "FROM Fact_Sales fs JOIN Dim_Product dp ON fs.product_id = dp.product_id LEFT JOIN Dim_Customer dc ON fs.customer_id = dc.customer_id";
+
+    public QueryResult queryAllSales() throws SQLException { return query(SALES_SELECT + " ORDER BY fs.sale_id", null); }
+    public QueryResult querySalesByProduct(String productName) throws SQLException { return query(SALES_SELECT + " WHERE dp.product_name = ? ORDER BY fs.sale_id", productName); }
     private QueryResult query(String sql, String value) throws SQLException {
         try (Connection conn = DBConnection.getConnection(); PreparedStatement statement = conn.prepareStatement(sql)) {
             if (value != null) statement.setString(1, value);
@@ -39,7 +42,7 @@ public class SalesService {
         }
     }
 
-    public void insertSale(String productName, int quantity, String paymentMethod, String customerEmail) {
+    public void insertSale(String productName, int quantity, String paymentMethod, String customerEmail) throws SQLException {
         String sql = "{CALL InsertSale(?, ?, ?, ?)}";
 
         try (Connection conn = DBConnection.getConnection();
@@ -57,9 +60,6 @@ public class SalesService {
 
             stmt.execute();
             System.out.println("Venta registrada correctamente.");
-
-        } catch (SQLException e) {
-            System.out.println("Error al registrar la venta: " + e.getMessage());
         }
     }
 
@@ -71,23 +71,37 @@ public class SalesService {
         }
     }
 
-    public void deleteSale(int saleId) {
-        String sql = "DELETE FROM Fact_Sales WHERE sale_id = ?";
+    public void updateSale(int saleId, String productName, int quantity, String paymentMethod, String customerEmail) throws SQLException {
+        String sql = "{CALL UpdateSale(?, ?, ?, ?, ?)}";
 
         try (Connection conn = DBConnection.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            CallableStatement stmt = conn.prepareCall(sql)) {
 
-            pstmt.setInt(1, saleId);
-            int rowsAffected = pstmt.executeUpdate();
+            stmt.setInt(1, saleId);
+            stmt.setString(2, productName);
+            stmt.setInt(3, quantity);
+            stmt.setString(4, paymentMethod);
 
-            if (rowsAffected > 0) {
-                System.out.println("Venta eliminada correctamente.");
+            if (customerEmail != null && !customerEmail.isEmpty()) {
+                stmt.setString(5, customerEmail);
             } else {
-                System.out.println("No se encontró ninguna venta con el ID: " + saleId);
+                stmt.setNull(5, Types.VARCHAR);
             }
 
-        } catch (SQLException e) {
-            System.out.println("Error al eliminar la venta: " + e.getMessage());
+            stmt.execute();
+            System.out.println("Venta actualizada correctamente.");
+        }
+    }
+
+    public void deleteSale(int saleId) throws SQLException {
+        String sql = "{CALL DeleteSale(?)}";
+
+        try (Connection conn = DBConnection.getConnection();
+            CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setInt(1, saleId);
+            stmt.execute();
+            System.out.println("Venta eliminada correctamente y stock devuelto al inventario.");
         }
     }
 
@@ -101,7 +115,8 @@ public class SalesService {
             System.out.println("2. Consultar todas las ventas registradas");
             System.out.println("3. Consultar ventas por producto");
             System.out.println("4. Eliminar registro de venta");
-            System.out.println("5. Regresar");
+            System.out.println("5. Editar registro de venta");
+            System.out.println("6. Regresar");
             System.out.print("Opción: ");
             String option = scanner.nextLine();
 
@@ -115,7 +130,11 @@ public class SalesService {
                     String customerPaymentMethod = scanner.nextLine();
                     System.out.print("Ingrese el correo del cliente, en caso de no tener uno, presione enter: ");
                     String customerEmail = scanner.nextLine();
-                    insertSale(soldProductName, quantity, customerPaymentMethod, customerEmail);
+                    try {
+                        insertSale(soldProductName, quantity, customerPaymentMethod, customerEmail);
+                    } catch (SQLException e) {
+                        System.out.println("Error al registrar la venta: " + e.getMessage());
+                    }
                     break;
                 
                 case "2":
@@ -131,10 +150,32 @@ public class SalesService {
                 case "4":
                     System.out.print("Ingrese el ID de la venta a eliminar: ");
                     int saleIdToDelete = Integer.parseInt(scanner.nextLine());
-                    deleteSale(saleIdToDelete);
+                    try {
+                        deleteSale(saleIdToDelete);
+                    } catch (SQLException e) {
+                        System.out.println("Error al eliminar la venta: " + e.getMessage());
+                    }
                     break;
 
                 case "5":
+                    System.out.print("Ingrese el ID de la venta a editar: ");
+                    int saleIdToUpdate = Integer.parseInt(scanner.nextLine());
+                    System.out.print("Ingrese el nombre del producto: ");
+                    String updatedProductName = scanner.nextLine();
+                    System.out.print("Ingrese la cantidad: ");
+                    int updatedQuantity = Integer.parseInt(scanner.nextLine());
+                    System.out.print("Ingrese el método de pago: ");
+                    String updatedPaymentMethod = scanner.nextLine();
+                    System.out.print("Ingrese el correo del cliente, en caso de no tener uno, presione enter: ");
+                    String updatedCustomerEmail = scanner.nextLine();
+                    try {
+                        updateSale(saleIdToUpdate, updatedProductName, updatedQuantity, updatedPaymentMethod, updatedCustomerEmail);
+                    } catch (SQLException e) {
+                        System.out.println("Error al actualizar la venta: " + e.getMessage());
+                    }
+                    break;
+
+                case "6":
                     exit = true;
                     break;
                 

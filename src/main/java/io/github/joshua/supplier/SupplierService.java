@@ -19,7 +19,7 @@ public class SupplierService {
         this.scanner = new Scanner(System.in);
     }
 
-    public void insertSupplier(String supplierName, String contactName, String phone, String email) {
+    public void insertSupplier(String supplierName, String contactName, String phone, String email) throws SQLException {
         String sql = "INSERT INTO Dim_Supplier (supplier_name, contact_name, phone, email) VALUES (?, ?, ?, ?)";
 
         try (Connection conn = DBConnection.getConnection();
@@ -30,15 +30,8 @@ public class SupplierService {
             pstmt.setString(3, phone);
             pstmt.setString(4, email);
 
-            int rowsAffected = pstmt.executeUpdate();
-            if (rowsAffected > 0) {
-                System.out.println("Proveedor insertado correctamente.");
-            } else {
-                System.out.println("No se pudo insertar el proveedor.");
-            }
-
-        } catch (SQLException e) {
-            System.out.println("Error al insertar el proveedor: " + e.getMessage());
+            pstmt.executeUpdate();
+            System.out.println("Proveedor insertado correctamente.");
         }
     }
 
@@ -52,7 +45,7 @@ public class SupplierService {
 
     public QueryResult queryAllSuppliers() throws SQLException { return query("SELECT * FROM Dim_Supplier", null); }
     public QueryResult querySupplierByEmail(String email) throws SQLException { return query("SELECT * FROM Dim_Supplier WHERE email = ?", email); }
-    public QueryResult querySupplierByProduct(String productName) throws SQLException { return query("SELECT s.supplier_name, s.contact_name, s.phone, s.email FROM Dim_Supplier s JOIN Fact_MaterialExpenses fme ON s.supplier_id = fme.supplier_id JOIN Dim_Product dp ON fme.product_id = dp.product_id WHERE dp.product_name = ?", productName); }
+    public QueryResult querySupplierByProduct(String productName) throws SQLException { return query("SELECT DISTINCT s.supplier_id, s.supplier_name, s.contact_name, s.phone, s.email FROM Dim_Supplier s JOIN Fact_MaterialExpenses fme ON s.supplier_id = fme.supplier_id JOIN Dim_Product dp ON fme.product_id = dp.product_id WHERE dp.product_name = ?", productName); }
     private QueryResult query(String sql, String value) throws SQLException {
         try (Connection conn = DBConnection.getConnection(); PreparedStatement statement = conn.prepareStatement(sql)) {
             if (value != null) statement.setString(1, value);
@@ -76,7 +69,7 @@ public class SupplierService {
         }
     }
 
-    public void updateSupplier(String email, String newSupplierName, String newContactName, String newPhone) {
+    public void updateSupplier(String email, String newSupplierName, String newContactName, String newPhone) throws SQLException {
         String sql = "UPDATE Dim_Supplier SET supplier_name = ?, contact_name = ?, phone = ? WHERE email = ?";
 
         try (Connection conn = DBConnection.getConnection();
@@ -87,35 +80,50 @@ public class SupplierService {
             pstmt.setString(3, newPhone);
             pstmt.setString(4, email);
 
-            int rowsAffected = pstmt.executeUpdate();
-            if (rowsAffected > 0) {
-                System.out.println("Proveedor actualizado correctamente.");
-            } else {
-                System.out.println("No se encontró ningún proveedor con el correo: " + email);
+            if (pstmt.executeUpdate() == 0) {
+                throw new SQLException("No se encontró ningún proveedor con el correo: " + email);
             }
-
-        } catch (SQLException e) {
-            System.out.println("Error al actualizar el proveedor: " + e.getMessage());
+            System.out.println("Proveedor actualizado correctamente.");
         }
     }
 
-    public void deleteSupplierByEmail(String email) {
-        String sql = "DELETE FROM Dim_Supplier WHERE email = ?";
+    public void updateSupplier(int supplierId, String newSupplierName, String newContactName, String newPhone, String newEmail) throws SQLException {
+        String sql = "UPDATE Dim_Supplier SET supplier_name = ?, contact_name = ?, phone = ?, email = ? WHERE supplier_id = ?";
 
         try (Connection conn = DBConnection.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setString(1, email);
+            pstmt.setString(1, newSupplierName);
+            pstmt.setString(2, newContactName);
+            pstmt.setString(3, newPhone);
+            pstmt.setString(4, newEmail);
+            pstmt.setInt(5, supplierId);
 
-            int rowsAffected = pstmt.executeUpdate();
-            if (rowsAffected > 0) {
-                System.out.println("Proveedor eliminado correctamente.");
-            } else {
-                System.out.println("No se encontró ningún proveedor con el correo: " + email);
+            if (pstmt.executeUpdate() == 0) {
+                throw new SQLException("No se encontró ningún proveedor con ID: " + supplierId);
             }
+            System.out.println("Proveedor actualizado correctamente.");
+        }
+    }
 
-        } catch (SQLException e) {
-            System.out.println("Error al eliminar el proveedor: " + e.getMessage());
+    public void deleteSupplierByEmail(String email) throws SQLException {
+        delete("DELETE FROM Dim_Supplier WHERE email = ?", email, "No se encontró ningún proveedor con el correo: " + email);
+    }
+
+    public void deleteSupplier(int supplierId) throws SQLException {
+        delete("DELETE FROM Dim_Supplier WHERE supplier_id = ?", supplierId, "No se encontró ningún proveedor con ID: " + supplierId);
+    }
+
+    private void delete(String sql, Object key, String notFoundMessage) throws SQLException {
+        try (Connection conn = DBConnection.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setObject(1, key);
+
+            if (pstmt.executeUpdate() == 0) {
+                throw new SQLException(notFoundMessage);
+            }
+            System.out.println("Proveedor eliminado correctamente.");
         }
     }
 
@@ -145,7 +153,11 @@ public class SupplierService {
                     String supplierPhone = scanner.nextLine();
                     System.out.print("Ingrese el nombre del contacto del proveedor: ");
                     String contactName = scanner.nextLine();
-                    insertSupplier(supplierName, contactName, supplierPhone, newSupplierEmail);
+                    try {
+                        insertSupplier(supplierName, contactName, supplierPhone, newSupplierEmail);
+                    } catch (SQLException e) {
+                        System.out.println("Error al insertar el proveedor: " + e.getMessage());
+                    }
                     break;
                 
                 case "2":
@@ -173,13 +185,21 @@ public class SupplierService {
                     String supplierNewContact = scanner.nextLine();
                     System.out.print("Ingrese el número de teléfono del proveedor");
                     String supplierNewPhone = scanner.nextLine();
-                    updateSupplier(supplierEmail, supplierNewName, supplierNewContact, supplierNewPhone);
+                    try {
+                        updateSupplier(supplierEmail, supplierNewName, supplierNewContact, supplierNewPhone);
+                    } catch (SQLException e) {
+                        System.out.println("Error al actualizar el proveedor: " + e.getMessage());
+                    }
                     break;
 
                 case "6":
                     System.out.print("Ingrese el correo del proveedor a eliminar: ");
                     String emailToDelete = scanner.nextLine();
-                    deleteSupplierByEmail(emailToDelete);
+                    try {
+                        deleteSupplierByEmail(emailToDelete);
+                    } catch (SQLException e) {
+                        System.out.println("Error al eliminar el proveedor: " + e.getMessage());
+                    }
                     break;
 
                 case "7":

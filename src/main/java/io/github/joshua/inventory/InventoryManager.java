@@ -34,11 +34,12 @@ public class InventoryManager {
 
             stmt.setString(1, productName);
 
-            var rs = stmt.executeQuery();
-            if (rs.next()) {
-                int currentQuantity = rs.getInt("quantity_on_hand");
-                int minimumStock = rs.getInt("minimum_stock");
-                return currentQuantity <= minimumStock;
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    int currentQuantity = rs.getInt("quantity_on_hand");
+                    int minimumStock = rs.getInt("minimum_stock");
+                    return currentQuantity <= minimumStock;
+                }
             }
 
         } catch (SQLException e) {
@@ -51,12 +52,16 @@ public class InventoryManager {
     private void checkIfHaveToNotify(String productName) { // This only will notify email or whatsapp if the product has reached its stack limit, the idea is to never notify in other social media.
         if (isStackLimitExceeded(productName)) {
             String message = "El producto " + productName + " ha alcanzado su límite de pila.";
-            notificationSender.sendNotification(message); // This only notify the admin (The email or wsp number that is in the env file).
+            try {
+                notificationSender.sendNotification(message); // This only notify the admin (The email or wsp number that is in the env file).
+            } catch (RuntimeException e) {
+                System.out.println("Error al enviar la notificación: " + e.getMessage());
+            }
         }
     }
 
-    public void updateMinimumStock(String productName, int newMinimumStock) {
-        String sql = "UPDATE Dim_Product SET minimum_stock = ? WHERE product_name = ?";
+    public void updateMinimumStock(String productName, int newMinimumStock) throws SQLException {
+        String sql = "UPDATE Inventory SET minimum_stock = ?, last_updated = GETDATE() WHERE product_id = (SELECT product_id FROM Dim_Product WHERE product_name = ?)";
 
         try (Connection conn = DBConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -64,22 +69,17 @@ public class InventoryManager {
             stmt.setInt(1, newMinimumStock);
             stmt.setString(2, productName);
 
-            int rowsAffected = stmt.executeUpdate();
-            if (rowsAffected > 0) {
-                System.out.println("Límite de pila actualizado correctamente para el producto: " + productName);
-            } else {
-                System.out.println("No se encontró el producto: " + productName);
+            if (stmt.executeUpdate() == 0) {
+                throw new SQLException("No se encontró el producto: " + productName);
             }
-
-            checkIfHaveToNotify(productName);
-
-        } catch (SQLException e) {
-            System.out.println("Error al actualizar el límite de pila: " + e.getMessage());
+            System.out.println("Límite de pila actualizado correctamente para el producto: " + productName);
         }
+
+        checkIfHaveToNotify(productName);
     }
 
-    public void updateQuantityOnHand(String productName, int newQuantity) {
-        String sql = "UPDATE Inventory SET quantity_on_hand = ? WHERE product_id = (SELECT product_id FROM Dim_Product WHERE product_name = ?)";
+    public void updateQuantityOnHand(String productName, int newQuantity) throws SQLException {
+        String sql = "UPDATE Inventory SET quantity_on_hand = ?, last_updated = GETDATE() WHERE product_id = (SELECT product_id FROM Dim_Product WHERE product_name = ?)";
 
         try (Connection conn = DBConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -87,18 +87,13 @@ public class InventoryManager {
             stmt.setInt(1, newQuantity);
             stmt.setString(2, productName);
 
-            int rowsAffected = stmt.executeUpdate();
-            if (rowsAffected > 0) {
-                System.out.println("Cantidad en mano actualizada correctamente para el producto: " + productName);
-            } else {
-                System.out.println("No se encontró el producto: " + productName);
+            if (stmt.executeUpdate() == 0) {
+                throw new SQLException("No se encontró el producto: " + productName);
             }
-
-            checkIfHaveToNotify(productName);
-
-        } catch (SQLException e) {
-            System.out.println("Error al actualizar la cantidad en mano: " + e.getMessage());
+            System.out.println("Cantidad en mano actualizada correctamente para el producto: " + productName);
         }
+
+        checkIfHaveToNotify(productName);
     }
 
     private void consultProductStock(String productName) {
@@ -147,6 +142,8 @@ public class InventoryManager {
                         updateMinimumStock(productNameForMinStock, newMinStock);
                     } catch (NumberFormatException e) {
                         System.out.println("Límite de stock inválido. Por favor, ingrese un número entero.");
+                    } catch (SQLException e) {
+                        System.out.println("Error al actualizar el límite de pila: " + e.getMessage());
                     }
                     break;
 
@@ -159,6 +156,8 @@ public class InventoryManager {
                         updateQuantityOnHand(productNameToUpdate, newQuantity);
                     } catch (NumberFormatException e) {
                         System.out.println("Cantidad inválida. Por favor, ingrese un número entero.");
+                    } catch (SQLException e) {
+                        System.out.println("Error al actualizar la cantidad en mano: " + e.getMessage());
                     }
                     break;
 

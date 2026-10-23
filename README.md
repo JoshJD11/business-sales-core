@@ -10,7 +10,8 @@ It's a Java desktop application built so the business owner/admin can use the gr
 - Record sales tied to a product and, optionally, a customer — regardless of payment method (cash, SINPE, card).
 - Log business expenses and supplier purchases in a single place (materials, fuel, utilities, etc.), optionally linked to a product and/or supplier.
 - Keep inventory in sync automatically: every sale reduces stock, with validation to prevent overselling.
-- Query, update, and delete sales, expenses, products, suppliers, and inventory records.
+- Query, update, and delete sales, expenses, products, suppliers, and inventory records. Editing or deleting a sale gives its stock back to inventory automatically.
+- Refuse deletes that would silently wipe history: a product with sales, or an expense category with expenses, cannot be deleted until those records are removed or reassigned.
 - Send notifications (e.g. low-stock alerts, reminders) via WhatsApp and/or email.
 - Run ad-hoc SQL queries from the interface or the console, with destructive commands blocked by default.
 - Export any query result to a formatted Excel file, or toggle automatic Excel export for every `SELECT` run for the rest of the session.
@@ -42,7 +43,7 @@ Organized by business domain, one package per area:
 
 ```
 src/main/java/io/github/joshua/
-├── admin/            → SqlConsoleService (ad-hoc SQL), DatabaseResetService (wipe all tables)
+├── admin/            → SqlConsoleService (ad-hoc SQL), DatabaseResetService (empty all tables)
 ├── costs/            → BusinessExpense (business expenses & supplier purchases)
 ├── customer/         → CustomerService (customer records)
 ├── database/         → DBConnection (connection management)
@@ -50,7 +51,7 @@ src/main/java/io/github/joshua/
 ├── inventory/        → InventoryManager (stock management)
 ├── notification/     → NotificationSender (interface), WhatsAppNotificationSender, EmailNotificationSender
 ├── product/          → ProductService (insert/update/delete products, auto-creates inventory row)
-├── sales/            → SalesService (insert/query/delete sales)
+├── sales/            → SalesService (insert/query/update/delete sales)
 ├── supplier/         → SupplierService (insert/query/update/delete suppliers)
 ├── ui/               → LoginController, DashboardController, FXML views and CSS
 ├── user/             → UserAuth, UserMenu
@@ -59,6 +60,7 @@ src/main/java/io/github/joshua/
 
 run.sh                 → build/run entry point (gui, console)
 install-shortcut.sh     → creates a desktop icon that launches run.sh
+migrations/            → SQL scripts to bring an existing database up to date with DatabaseTemplate.sql
 mvnw / mvnw.cmd / .mvn/  → Maven Wrapper (no local Maven install required)
 ```
 
@@ -73,7 +75,7 @@ mvnw / mvnw.cmd / .mvn/  → Maven Wrapper (no local Maven install required)
 The schema is a **fact constellation** (galaxy schema): multiple fact tables share the same dimension tables, rather than each fact having its own private dimensions as in a plain star schema.
 
 **Dimensions:**
-- `Dim_Date` — standard date dimension (day, month, year, day of week, etc.). New rows are created on demand by the stored procedures whenever a sale or expense happens on a date not yet in the table.
+- `Dim_Date` — standard date dimension (day, month, year, day of week, etc.). New rows are created on demand (by `EnsureTodayDate`) whenever a sale or expense happens on a date not yet in the table. Dates use Costa Rica time (`Central America Standard Time`), not the Azure server's UTC clock, so a sale made at night is recorded on the right day.
 - `Dim_Product` — product catalog (name, category, unit price, unit of measure).
 - `Dim_Customer` — customer directory (name, phone, email). Nullable on sales, since not every sale has an identified customer (e.g. walk-in sales).
 - `Dim_Supplier` — supplier directory (name, contact, phone, email). Nullable on expenses, since not every expense has a formal supplier (e.g. fuel).
@@ -111,9 +113,13 @@ CREATE INDEX IX_Expenses_DateId ON Fact_MaterialExpenses(date_id);
 
 Rather than building multi-step inserts/updates in Java, the core write operations live in SQL Server stored procedures, called from Java via `CallableStatement`. Each one validates its inputs and wraps its writes in a transaction, rolling back on any failure:
 
-- **`InsertSale`** — looks up the product and (optional) customer, creates today's row in `Dim_Date` if missing, inserts the sale, and calls `ReduceStock` — all inside one transaction. Fails with a clear error if the product doesn't exist, the quantity is invalid, or stock runs out.
+- **`EnsureTodayDate`** — creates today's `Dim_Date` row (in Costa Rica time) if missing and returns its id. Shared by the insert procedures.
+- **`InsertSale`** — looks up the product and (optional) customer, creates today's row in `Dim_Date` if missing, inserts the sale, and calls `ReduceStock` — all inside one transaction. Fails with a clear error if the product doesn't exist, a customer email was given but doesn't match any customer, the quantity is invalid, or stock runs out.
+- **`UpdateSale`** — edits a sale's product, quantity, payment method and customer. Returns the old quantity to stock and takes the new one in the same transaction, so inventory stays consistent (and the edit fails if there isn't enough stock). Keeps the original unit price when the product doesn't change.
+- **`DeleteSale`** — deletes a sale and returns its quantity to inventory.
 - **`ReduceStock`** — validates that enough stock exists before deducting it; throws if the product has no inventory row or if the requested quantity exceeds what's on hand.
-- **`InsertExpense`** — looks up (or creates) the expense category, looks up the optional product/supplier, creates today's `Dim_Date` row if missing, and inserts the expense.
+- **`InsertExpense`** — looks up (or creates) the expense category, looks up the optional product/supplier, creates today's `Dim_Date` row if missing, and inserts the expense. A product name or supplier email that doesn't exist is rejected instead of being silently stored as empty.
+- **`UpdateExpense`** — edits every field of an expense (category, optional product/supplier, description, amount, payment method, quantity) with the same validations.
 - **`InsertProductAndCreateInventory`** — inserts a new product and its corresponding `Inventory` row (starting at zero stock) in a single transaction, so a product can never exist without an inventory record.
 
 Validation failures use `THROW` (not `PRINT`), so they surface to Java as a real `SQLException` that the calling service can catch and show to the user — rather than silently failing.
@@ -145,7 +151,7 @@ Available from the dashboard after logging in, and through the console fallback 
 
 - **Ad-hoc SQL queries** (`SqlConsoleService`) — run any `SELECT` and see it pretty-printed to the console (or exported to Excel, see below). `DROP`, `TRUNCATE`, and `DELETE` are blocked from this option as a safety net.
 - **Toggle Excel export** (`AppSettings`) — an in-memory, session-wide switch: once turned on, every `SELECT` result (from the SQL console or from other queries in the app) is written to an `.xlsx` file under `exports/` instead of being printed, until turned off again. This resets to off every time the program restarts.
-- **Wipe database** (`DatabaseResetService`) — deletes all rows from every table (structure and stored procedures are kept) and resets identity counters. Requires typing `CONFIRMAR` to proceed, since it's irreversible.
+- **Wipe database** (`DatabaseResetService`) — deletes all rows from every table (structure and stored procedures are kept) and resets identity counters, all in one transaction: if anything fails, nothing is deleted. Requires typing `CONFIRMAR` to proceed, since it's irreversible.
 
 Excel exports are written to an `exports/` folder at the project root (auto-created if missing, and excluded from git), with filenames timestamped to avoid overwriting previous exports.
 
@@ -180,7 +186,8 @@ If you want anyone cloning the repo to know which variables to set, keep a versi
 - Database: `business-sales-db`
 - Server: `joshuaroot.database.windows.net` (West US region, General Purpose - Serverless tier, within Azure's free tier)
 - Authentication: SQL Authentication (username/password, not Microsoft Entra)
-- Run the table and stored procedure scripts in order: `Dim_Date`, `Dim_Product`, `Dim_Customer`, `Dim_Supplier`, `Dim_ExpenseCategory`, `Fact_Sales`, `Fact_MaterialExpenses`, `Inventory`, then `ReduceStock`, `InsertSale`, `InsertExpense`, `InsertProductAndCreateInventory`, then the indexes above.
+- Run the table and stored procedure scripts in order: `Dim_Date`, `Dim_Product`, `Dim_Customer`, `Dim_Supplier`, `Dim_ExpenseCategory`, `Fact_Sales`, `Fact_MaterialExpenses`, `Inventory`, then `ReduceStock`, `EnsureTodayDate`, `InsertSale`, `UpdateSale`, `DeleteSale`, `InsertExpense`, `UpdateExpense`, `InsertProductAndCreateInventory`, then the indexes above.
+- For a database created from an older version of the template, run the scripts in `migrations/` in order. They use `CREATE OR ALTER` and `GO` separators, so they can be run as-is (e.g. from Azure Data Studio or the Azure portal query editor) and are safe to re-run.
 
 ### 3. Azure CLI (for the firewall step)
 
@@ -234,8 +241,9 @@ it.
 The GUI also includes the terminal administration workflows:
 
 - Create, edit and delete records for products, customers, suppliers, categories and inventory.
-- Register sales and expenses through the existing `InsertSale` and `InsertExpense` procedures.
-- Delete sales and expenses from their selected rows.
+- Register sales and expenses through the `InsertSale` and `InsertExpense` procedures.
+- Edit and delete sales and expenses from their selected rows (`UpdateSale`, `DeleteSale`, `UpdateExpense`). The sales and expenses views show product, customer, category and supplier names instead of raw ids.
+- Any database error (missing product, not enough stock, invalid data…) is shown in a dialog; nothing fails silently.
 - Export the active table or custom query results to `exports/*.xlsx`.
 - Enable automatic Excel export for custom `SELECT` queries.
 - Execute custom SQL while destructive `DROP`, `TRUNCATE` and `DELETE` statements remain blocked.

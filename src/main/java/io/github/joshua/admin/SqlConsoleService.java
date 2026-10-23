@@ -19,6 +19,13 @@ public class SqlConsoleService {
         }
     }
 
+    public int execute(String sql) throws SQLException {
+        try (Connection conn = DBConnection.getConnection();
+             Statement stmt = conn.createStatement()) {
+            return stmt.executeUpdate(sql);
+        }
+    }
+
     public void exportQuery(String sql, String fileName) throws SQLException, IOException {
         ExcelExportService.exportToExcel(query(sql), fileName);
     }

@@ -86,7 +86,7 @@ public class DashboardController {
         }
         String filterLabel = switch (currentTable) {
             case "Dim_Product" -> "nombre de producto";
-            case "Dim_Customer", "Dim_Supplier" -> "correo o nombre de producto";
+            case "Dim_Customer" -> "correo";
             case "Inventory", "Fact_Sales", "Fact_MaterialExpenses" -> "nombre de producto";
             case "Dim_ExpenseCategory" -> "nombre de categoría";
             default -> "filtro";
@@ -118,15 +118,17 @@ public class DashboardController {
 
     @FXML private void createRecord() {
         if (currentTable == null) return;
-        if (currentTable.equals("Fact_Sales")) runSaleDialog();
-        else if (currentTable.equals("Fact_MaterialExpenses")) runExpenseDialog();
+        if (currentTable.equals("Fact_Sales")) runSaleDialog(null);
+        else if (currentTable.equals("Fact_MaterialExpenses")) runExpenseDialog(null);
         else editRecord(null);
     }
 
     @FXML private void editSelected() {
         ObservableList<String> selected = dataTable.getSelectionModel().getSelectedItem();
         if (selected == null) { notifyUser(Alert.AlertType.INFORMATION, "Selecciona un registro", "Selecciona una fila para editarla."); return; }
-        editRecord(selected);
+        if (currentTable.equals("Fact_Sales")) runSaleDialog(selected);
+        else if (currentTable.equals("Fact_MaterialExpenses")) runExpenseDialog(selected);
+        else editRecord(selected);
     }
 
     @FXML private void deleteSelected() {
@@ -160,11 +162,11 @@ public class DashboardController {
     }
 
     @FXML private void resetDatabase() {
-        TextInputDialog dialog = new TextInputDialog(); dialog.setTitle("Vaciar base de datos"); dialog.setHeaderText("Esta acción eliminará todas las tablas y sus datos."); dialog.setContentText("Escribe CONFIRMAR para continuar:");
+        TextInputDialog dialog = new TextInputDialog(); dialog.setTitle("Vaciar base de datos"); dialog.setHeaderText("Esta acción eliminará todos los registros de todas las tablas. La estructura se conserva."); dialog.setContentText("Escribe CONFIRMAR para continuar:");
         dialog.showAndWait().ifPresent(value -> {
             if (!"CONFIRMAR".equals(value)) { notifyUser(Alert.AlertType.WARNING, "Operación cancelada", "La confirmación debe ser exactamente CONFIRMAR."); return; }
-            Task<Void> task = new Task<>() { protected Void call() { resetService.resetDatabaseConfirmed(); return null; } };
-            task.setOnSucceeded(event -> { notifyUser(Alert.AlertType.INFORMATION, "Base de datos vaciada", "Las tablas fueron eliminadas correctamente."); showDashboard(); }); task.setOnFailed(event -> showError(task.getException())); start(task);
+            Task<Void> task = new Task<>() { protected Void call() throws Exception { resetService.resetDatabaseConfirmed(); return null; } };
+            task.setOnSucceeded(event -> { notifyUser(Alert.AlertType.INFORMATION, "Base de datos vaciada", "Todos los registros fueron eliminados correctamente."); showDashboard(); }); task.setOnFailed(event -> showError(task.getException())); start(task);
         });
     }
 
@@ -223,6 +225,7 @@ public class DashboardController {
         GridPane grid = formGrid(labels);
         List<TextField> fields = fieldsOf(grid);
         fillServiceFields(selected, fields);
+        if (currentTable.equals("Inventory") && selected != null) fields.get(0).setEditable(false);
         if (showForm(selected == null ? "Nuevo registro" : "Editar registro", grid)) invokeServiceEdit(selected, fields);
     }
 
@@ -235,49 +238,73 @@ public class DashboardController {
         if (currentTable.equals("Inventory")) { fields.get(0).setText(value(selected, "product_name")); fields.get(1).setText(value(selected, "minimum_stock")); fields.get(2).setText(value(selected, "quantity_on_hand")); }
     }
 
-    private String value(ObservableList<String> row, String column) { return row.get(currentData.columnNames.indexOf(column)); }
+    private String value(ObservableList<String> row, String column) { int index = currentData.columnNames.indexOf(column); if (index < 0) throw new IllegalStateException("La vista actual no incluye la columna " + column + "."); String cell = row.get(index); return cell == null ? "" : cell; }
+    private static String optional(String text) { return text == null || text.isBlank() ? null : text; }
     private void invokeServiceEdit(ObservableList<String> selected, List<TextField> fields) {
+        List<String> v = fields.stream().map(field -> field.getText().trim()).toList();
+        ServiceAction action;
         try {
-            switch (currentTable) {
-                case "Dim_Product" -> { if (selected == null) productService.insertProductAndCreateInventory(fields.get(0).getText(), fields.get(1).getText(), fields.get(2).getText(), Double.parseDouble(fields.get(3).getText())); else productService.updateProduct(Integer.parseInt(value(selected, "product_id")), fields.get(0).getText(), fields.get(1).getText(), fields.get(2).getText(), Double.parseDouble(fields.get(3).getText())); }
-                case "Dim_Customer" -> { if (selected == null) customerService.insertCustomer(fields.get(0).getText(), fields.get(1).getText(), fields.get(2).getText()); else customerService.updateCustomer(value(selected, "email"), fields.get(0).getText(), fields.get(2).getText()); }
-                case "Dim_Supplier" -> { if (selected == null) supplierService.insertSupplier(fields.get(0).getText(), fields.get(1).getText(), fields.get(2).getText(), fields.get(3).getText()); else supplierService.updateSupplier(value(selected, "email"), fields.get(0).getText(), fields.get(1).getText(), fields.get(2).getText()); }
-                case "Dim_ExpenseCategory" -> { if (selected == null) categoryService.insertExpenseCategory(fields.get(0).getText()); else categoryService.updateExpenseCategory(fields.get(0).getText(), fields.get(1).getText()); }
-                case "Inventory" -> { inventoryService.updateMinimumStock(fields.get(0).getText(), Integer.parseInt(fields.get(1).getText())); inventoryService.updateQuantityOnHand(fields.get(0).getText(), Integer.parseInt(fields.get(2).getText())); }
-                default -> { return; }
-            }
-            notifyUser(Alert.AlertType.INFORMATION, "Operación completada", "La operación se ejecutó mediante el servicio de consola.");
-            showTable(currentTable);
-        } catch (RuntimeException error) { notifyUser(Alert.AlertType.ERROR, "Datos inválidos", error.getMessage()); }
+            action = switch (currentTable) {
+                case "Dim_Product" -> { double price = Double.parseDouble(v.get(3)); if (selected == null) yield () -> productService.insertProductAndCreateInventory(v.get(0), v.get(1), v.get(2), price); int id = Integer.parseInt(value(selected, "product_id")); yield () -> productService.updateProduct(id, v.get(0), v.get(1), v.get(2), price); }
+                case "Dim_Customer" -> { if (selected == null) yield () -> customerService.insertCustomer(v.get(0), optional(v.get(1)), optional(v.get(2))); int id = Integer.parseInt(value(selected, "customer_id")); yield () -> customerService.updateCustomer(id, v.get(0), optional(v.get(1)), optional(v.get(2))); }
+                case "Dim_Supplier" -> { if (selected == null) yield () -> supplierService.insertSupplier(v.get(0), optional(v.get(1)), optional(v.get(2)), optional(v.get(3))); int id = Integer.parseInt(value(selected, "supplier_id")); yield () -> supplierService.updateSupplier(id, v.get(0), optional(v.get(1)), optional(v.get(2)), optional(v.get(3))); }
+                case "Dim_ExpenseCategory" -> selected == null ? () -> categoryService.insertExpenseCategory(v.get(0)) : () -> categoryService.updateExpenseCategory(v.get(0), v.get(1));
+                case "Inventory" -> { int minimum = Integer.parseInt(v.get(1)); int quantity = Integer.parseInt(v.get(2)); yield () -> { inventoryService.updateMinimumStock(v.get(0), minimum); inventoryService.updateQuantityOnHand(v.get(0), quantity); }; }
+                default -> null;
+            };
+        } catch (NumberFormatException error) { notifyUser(Alert.AlertType.ERROR, "Datos inválidos", "Revisa los campos numéricos: " + error.getMessage()); return; }
+        if (action != null) runService(action, currentTable);
     }
 
     private void deleteThroughService(ObservableList<String> selected) {
-        try {
-            switch (currentTable) {
-                case "Dim_Product" -> productService.deleteProduct(value(selected, "product_name"));
-                case "Dim_Customer" -> customerService.deleteCustomer(value(selected, "email"));
-                case "Dim_Supplier" -> supplierService.deleteSupplierByEmail(value(selected, "email"));
-                case "Dim_ExpenseCategory" -> categoryService.deleteExpenseCategory(value(selected, "category_name"));
-                case "Fact_Sales" -> salesService.deleteSale(Integer.parseInt(value(selected, "sale_id")));
-                case "Fact_MaterialExpenses" -> expenseService.deleteExpense(Integer.parseInt(value(selected, "expense_id")));
-                default -> { notifyUser(Alert.AlertType.WARNING, "Operación no disponible", "La consola no implementa eliminar registros de inventario."); return; }
-            }
-            showTable(currentTable);
-        } catch (RuntimeException error) { notifyUser(Alert.AlertType.ERROR, "No se pudo eliminar", error.getMessage()); }
+        ServiceAction action = switch (currentTable) {
+            case "Dim_Product" -> { int id = Integer.parseInt(value(selected, "product_id")); yield () -> productService.deleteProduct(id); }
+            case "Dim_Customer" -> { int id = Integer.parseInt(value(selected, "customer_id")); yield () -> customerService.deleteCustomer(id); }
+            case "Dim_Supplier" -> { int id = Integer.parseInt(value(selected, "supplier_id")); yield () -> supplierService.deleteSupplier(id); }
+            case "Dim_ExpenseCategory" -> { String name = value(selected, "category_name"); yield () -> categoryService.deleteExpenseCategory(name); }
+            case "Fact_Sales" -> { int id = Integer.parseInt(value(selected, "sale_id")); yield () -> salesService.deleteSale(id); }
+            case "Fact_MaterialExpenses" -> { int id = Integer.parseInt(value(selected, "expense_id")); yield () -> expenseService.deleteExpense(id); }
+            default -> null;
+        };
+        if (action == null) { notifyUser(Alert.AlertType.WARNING, "Operación no disponible", "La consola no implementa eliminar registros de inventario."); return; }
+        runService(action, currentTable);
     }
 
-    private void runService(Runnable action, String refreshTable) {
-        Task<Void> task = new Task<>() { protected Void call() { action.run(); return null; } };
-        task.setOnSucceeded(event -> { notifyUser(Alert.AlertType.INFORMATION, "Operación enviada", "La operación fue procesada por el servicio."); if (refreshTable != null) showTable(refreshTable); }); task.setOnFailed(event -> showError(task.getException())); start(task);
+    private void runService(ServiceAction action, String refreshTable) {
+        Task<Void> task = new Task<>() { protected Void call() throws Exception { action.run(); return null; } };
+        task.setOnSucceeded(event -> { notifyUser(Alert.AlertType.INFORMATION, "Operación completada", "Los cambios se guardaron en la base de datos."); if (refreshTable != null) showTable(refreshTable); }); task.setOnFailed(event -> showError(task.getException())); start(task);
     }
 
-    private void runSaleDialog() { GridPane grid = formGrid(List.of("Producto", "Cantidad", "Método de pago", "Correo cliente")); List<TextField> f = fieldsOf(grid); if (showForm("Registrar venta", grid)) runService(() -> salesService.insertSale(f.get(0).getText(), Integer.parseInt(f.get(1).getText()), f.get(2).getText(), f.get(3).getText()), "Fact_Sales"); }
-    private void runExpenseDialog() { GridPane grid = formGrid(List.of("Categoría", "Producto", "Correo proveedor", "Descripción", "Monto", "Método de pago", "Cantidad")); List<TextField> f = fieldsOf(grid); if (showForm("Registrar gasto", grid)) runService(() -> expenseService.insertExpense(f.get(0).getText(), f.get(1).getText(), f.get(2).getText(), f.get(3).getText(), Double.parseDouble(f.get(4).getText()), f.get(5).getText(), Integer.parseInt(f.get(6).getText())), "Fact_MaterialExpenses"); }
+    private void runSaleDialog(ObservableList<String> selected) {
+        GridPane grid = formGrid(List.of("Producto", "Cantidad", "Método de pago", "Correo cliente (opcional)")); List<TextField> f = fieldsOf(grid);
+        if (selected != null) { f.get(0).setText(value(selected, "product_name")); f.get(1).setText(value(selected, "quantity")); f.get(2).setText(value(selected, "payment_method")); f.get(3).setText(value(selected, "customer_email")); }
+        if (!showForm(selected == null ? "Registrar venta" : "Editar venta", grid)) return;
+        List<String> v = f.stream().map(field -> field.getText().trim()).toList();
+        if (v.get(0).isEmpty() || v.get(2).isEmpty()) { notifyUser(Alert.AlertType.ERROR, "Datos incompletos", "Producto y método de pago son obligatorios."); return; }
+        int quantity;
+        try { quantity = Integer.parseInt(v.get(1)); } catch (NumberFormatException error) { notifyUser(Alert.AlertType.ERROR, "Datos inválidos", "La cantidad debe ser un número entero."); return; }
+        if (selected == null) { runService(() -> salesService.insertSale(v.get(0), quantity, v.get(2), optional(v.get(3))), "Fact_Sales"); return; }
+        int id = Integer.parseInt(value(selected, "sale_id"));
+        runService(() -> salesService.updateSale(id, v.get(0), quantity, v.get(2), optional(v.get(3))), "Fact_Sales");
+    }
+
+    private void runExpenseDialog(ObservableList<String> selected) {
+        GridPane grid = formGrid(List.of("Categoría", "Producto (opcional)", "Correo proveedor (opcional)", "Descripción", "Monto", "Método de pago", "Cantidad (opcional)")); List<TextField> f = fieldsOf(grid);
+        if (selected != null) { List<String> columns = List.of("category_name", "product_name", "supplier_email", "description", "amount", "payment_method", "quantity"); for (int i = 0; i < columns.size(); i++) f.get(i).setText(value(selected, columns.get(i))); }
+        if (!showForm(selected == null ? "Registrar gasto" : "Editar gasto", grid)) return;
+        List<String> v = f.stream().map(field -> field.getText().trim()).toList();
+        if (v.get(0).isEmpty() || v.get(3).isEmpty() || v.get(5).isEmpty()) { notifyUser(Alert.AlertType.ERROR, "Datos incompletos", "Categoría, descripción y método de pago son obligatorios."); return; }
+        double amount; Integer quantity;
+        try { amount = Double.parseDouble(v.get(4)); quantity = v.get(6).isEmpty() ? null : Integer.valueOf(v.get(6)); } catch (NumberFormatException error) { notifyUser(Alert.AlertType.ERROR, "Datos inválidos", "El monto debe ser numérico y la cantidad un número entero."); return; }
+        if (selected == null) { runService(() -> expenseService.insertExpense(v.get(0), optional(v.get(1)), optional(v.get(2)), v.get(3), amount, v.get(5), quantity), "Fact_MaterialExpenses"); return; }
+        int id = Integer.parseInt(value(selected, "expense_id"));
+        runService(() -> expenseService.updateExpense(id, v.get(0), optional(v.get(1)), optional(v.get(2)), v.get(3), amount, v.get(5), quantity), "Fact_MaterialExpenses");
+    }
 
     private void runSql(String sql) {
         String trimmed = sql == null ? "" : sql.trim(); if (trimmed.isEmpty()) return;
-        if (trimmed.matches("(?i)^(DROP|TRUNCATE|DELETE)\\b.*")) { notifyUser(Alert.AlertType.WARNING, "Consulta bloqueada", "DROP, TRUNCATE y DELETE requieren usar la opción de limpieza con confirmación."); return; }
-        if (trimmed.matches("(?i)^SELECT\\b.*")) runQuery(trimmed); else runService(() -> sqlService.executeCustomQuery(trimmed), null);
+        if (trimmed.matches("(?is)^(DROP|TRUNCATE|DELETE)\\b.*")) { notifyUser(Alert.AlertType.WARNING, "Consulta bloqueada", "DROP, TRUNCATE y DELETE requieren usar la opción de limpieza con confirmación."); return; }
+        if (trimmed.matches("(?is)^SELECT\\b.*")) runQuery(trimmed); else runService(() -> sqlService.execute(trimmed), null);
     }
 
     private void runQuery(String sql) {
@@ -297,7 +324,7 @@ public class DashboardController {
     private boolean showForm(String title, GridPane grid) { Dialog<ButtonType> dialog = new Dialog<>(); dialog.setTitle(title); dialog.getDialogPane().setContent(grid); ButtonType save = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE); dialog.getDialogPane().getButtonTypes().addAll(save, ButtonType.CANCEL); return dialog.showAndWait().orElse(ButtonType.CANCEL) == save; }
     private void setTableActions(String table) {
         boolean canCreate = List.of("Dim_Product", "Dim_Customer", "Dim_Supplier", "Dim_ExpenseCategory", "Fact_Sales", "Fact_MaterialExpenses").contains(table);
-        boolean canEdit = List.of("Dim_Product", "Dim_Customer", "Dim_Supplier", "Dim_ExpenseCategory", "Inventory").contains(table);
+        boolean canEdit = List.of("Dim_Product", "Dim_Customer", "Dim_Supplier", "Dim_ExpenseCategory", "Inventory", "Fact_Sales", "Fact_MaterialExpenses").contains(table);
         boolean canDelete = List.of("Dim_Product", "Dim_Customer", "Dim_Supplier", "Dim_ExpenseCategory", "Fact_Sales", "Fact_MaterialExpenses").contains(table);
         setActionVisibility(createButton, canCreate);
         setActionVisibility(editButton, canEdit);
@@ -345,5 +372,6 @@ public class DashboardController {
     private boolean confirm(String title, String message) { Alert alert = new Alert(Alert.AlertType.CONFIRMATION, message, ButtonType.CANCEL, ButtonType.OK); alert.setTitle(title); return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK; }
     private void showError(Throwable error) { notifyUser(Alert.AlertType.ERROR, "No se pudo completar la operación", error == null ? "Error desconocido" : error.getMessage()); }
     private void notifyUser(Alert.AlertType type, String title, String message) { Alert alert = new Alert(type); alert.setTitle(title); alert.setHeaderText(null); alert.setContentText(message); alert.show(); }
+    @FunctionalInterface private interface ServiceAction { void run() throws Exception; }
     private record TableData(List<String> columnNames, ObservableList<TableColumn<ObservableList<String>, String>> columns, ObservableList<ObservableList<String>> rows) { }
 }
