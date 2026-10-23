@@ -86,24 +86,15 @@ public class ProductService {
         }
     }
 
-    public void deleteProduct(String productName) throws SQLException {
-        delete("DELETE FROM Dim_Product WHERE product_name = ?",
-                "SELECT COUNT(*) FROM Fact_Sales fs JOIN Dim_Product dp ON fs.product_id = dp.product_id WHERE dp.product_name = ?",
-                productName, "No se encontró el producto: " + productName);
-    }
-
-    public void deleteProduct(int productId) throws SQLException {
-        delete("DELETE FROM Dim_Product WHERE product_id = ?",
-                "SELECT COUNT(*) FROM Fact_Sales WHERE product_id = ?",
-                productId, "No se encontró el producto con ID: " + productId);
-    }
-
     // Fact_Sales cascades on product delete, so refuse instead of silently wiping the sales history.
-    private void delete(String sql, String salesCountSql, Object key, String notFoundMessage) throws SQLException {
+    public void deleteProduct(int productId) throws SQLException {
+        String countSql = "SELECT COUNT(*) FROM Fact_Sales WHERE product_id = ?";
+        String sql = "DELETE FROM Dim_Product WHERE product_id = ?";
+
         try (Connection conn = DBConnection.getConnection()) {
 
-            try (PreparedStatement countStmt = conn.prepareStatement(salesCountSql)) {
-                countStmt.setObject(1, key);
+            try (PreparedStatement countStmt = conn.prepareStatement(countSql)) {
+                countStmt.setInt(1, productId);
                 try (ResultSet rs = countStmt.executeQuery()) {
                     rs.next();
                     int sales = rs.getInt(1);
@@ -114,10 +105,10 @@ public class ProductService {
             }
 
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setObject(1, key);
+                pstmt.setInt(1, productId);
 
                 if (pstmt.executeUpdate() == 0) {
-                    throw new SQLException(notFoundMessage);
+                    throw new SQLException("No se encontró el producto con ID: " + productId);
                 }
                 System.out.println("Producto e inventario del producto eliminados correctamente.");
             }
@@ -179,9 +170,10 @@ public class ProductService {
                     System.out.print("Ingrese la nueva unidad de medida: ");
                     String updatedUnitOfMeasure = scanner.nextLine();
                     System.out.print("Ingrese el nuevo precio unitario: ");
+                    String updatedUnitPriceInput = scanner.nextLine();
                     try {
-                        int productId = Integer.parseInt(productIdToUpdate);
-                        double updatedUnitPrice = Double.parseDouble(scanner.nextLine());
+                        int productId = Integer.parseInt(productIdToUpdate.trim());
+                        double updatedUnitPrice = Double.parseDouble(updatedUnitPriceInput);
                         updateProduct(productId, updatedProductName, updatedCategory, updatedUnitOfMeasure, updatedUnitPrice);
                     } catch (NumberFormatException e) {
                         System.out.println("ID o precio unitario inválido. Por favor, ingrese valores válidos.");
@@ -191,10 +183,12 @@ public class ProductService {
                     break;
 
                 case "5":
-                    System.out.print("Ingrese el nombre del producto a eliminar: ");
-                    String productToDelete = scanner.nextLine();
+                    System.out.print("Ingrese el ID del producto a eliminar (ver opción 1): ");
+                    String productIdToDelete = scanner.nextLine();
                     try {
-                        deleteProduct(productToDelete);
+                        deleteProduct(Integer.parseInt(productIdToDelete.trim()));
+                    } catch (NumberFormatException e) {
+                        System.out.println("ID inválido. Por favor, ingrese un número entero.");
                     } catch (SQLException e) {
                         System.out.println("Error al eliminar el producto: " + e.getMessage());
                     }

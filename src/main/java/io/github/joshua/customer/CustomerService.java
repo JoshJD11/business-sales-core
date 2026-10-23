@@ -26,28 +26,11 @@ public class CustomerService {
             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, customerName);
-            stmt.setString(2, email);
-            stmt.setString(3, phone);
+            stmt.setString(2, blankToNull(email));
+            stmt.setString(3, blankToNull(phone));
 
             stmt.executeUpdate();
             System.out.println("Cliente insertado correctamente.");
-        }
-    }
-
-    public void updateCustomer(String email, String newCustomerName, String newPhone) throws SQLException {
-        String sql = "UPDATE Dim_Customer SET customer_name = ?, phone = ? WHERE email = ?";
-
-        try (Connection conn = DBConnection.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, newCustomerName);
-            stmt.setString(2, newPhone);
-            stmt.setString(3, email);
-
-            if (stmt.executeUpdate() == 0) {
-                throw new SQLException("No se encontró el cliente con el correo: " + email);
-            }
-            System.out.println("Cliente actualizado correctamente.");
         }
     }
 
@@ -58,8 +41,8 @@ public class CustomerService {
             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, newCustomerName);
-            stmt.setString(2, newEmail);
-            stmt.setString(3, newPhone);
+            stmt.setString(2, blankToNull(newEmail));
+            stmt.setString(3, blankToNull(newPhone));
             stmt.setInt(4, customerId);
 
             if (stmt.executeUpdate() == 0) {
@@ -99,25 +82,23 @@ public class CustomerService {
         }
     }
 
-    public void deleteCustomer(String email) throws SQLException {
-        delete("DELETE FROM Dim_Customer WHERE email = ?", email, "No se encontró el cliente con el correo: " + email);
-    }
-
     public void deleteCustomer(int customerId) throws SQLException {
-        delete("DELETE FROM Dim_Customer WHERE customer_id = ?", customerId, "No se encontró el cliente con ID: " + customerId);
-    }
+        String sql = "DELETE FROM Dim_Customer WHERE customer_id = ?";
 
-    private void delete(String sql, Object key, String notFoundMessage) throws SQLException {
         try (Connection conn = DBConnection.getConnection();
             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setObject(1, key);
+            stmt.setInt(1, customerId);
 
             if (stmt.executeUpdate() == 0) {
-                throw new SQLException(notFoundMessage);
+                throw new SQLException("No se encontró el cliente con ID: " + customerId);
             }
             System.out.println("Cliente eliminado correctamente.");
         }
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     public void init() {
@@ -139,9 +120,9 @@ public class CustomerService {
                 case "1":
                     System.out.print("Ingrese el nombre del cliente: ");
                     String customerName = scanner.nextLine();
-                    System.out.print("Ingrese el correo del cliente: ");
+                    System.out.print("Ingrese el correo del cliente (opcional): ");
                     String customerEmailToInsert = scanner.nextLine();
-                    System.out.print("Ingrese el número de teléfono del cliente: ");
+                    System.out.print("Ingrese el número de teléfono del cliente (opcional): ");
                     String customerPhone = scanner.nextLine();
                     try {
                         insertCustomer(customerName, customerEmailToInsert, customerPhone);
@@ -161,23 +142,29 @@ public class CustomerService {
                     break;
 
                 case "4":
-                    System.out.print("Ingrese el correo del cliente a actualizar: ");
-                    String customerEmailToUpdate = scanner.nextLine();
+                    System.out.print("Ingrese el ID del cliente a actualizar (ver opción 2): ");
+                    String customerIdToUpdate = scanner.nextLine();
                     System.out.print("Ingrese el nuevo nombre del cliente: ");
                     String newCustomerName = scanner.nextLine();
-                    System.out.print("Ingrese el nuevo número de teléfono del cliente: ");
+                    System.out.print("Ingrese el nuevo correo del cliente (opcional): ");
+                    String newCustomerEmail = scanner.nextLine();
+                    System.out.print("Ingrese el nuevo número de teléfono del cliente (opcional): ");
                     String newCustomerPhone = scanner.nextLine();
                     try {
-                        updateCustomer(customerEmailToUpdate, newCustomerName, newCustomerPhone);
+                        updateCustomer(Integer.parseInt(customerIdToUpdate.trim()), newCustomerName, newCustomerEmail, newCustomerPhone);
+                    } catch (NumberFormatException e) {
+                        System.out.println("ID inválido. Por favor, ingrese un número entero.");
                     } catch (SQLException e) {
                         System.out.println("Error al actualizar el cliente: " + e.getMessage());
                     }
                     break;
                 case "5":
-                    System.out.print("Ingrese el correo del cliente a eliminar: ");
-                    String customerEmailToDelete = scanner.nextLine();
+                    System.out.print("Ingrese el ID del cliente a eliminar (ver opción 2): ");
+                    String customerIdToDelete = scanner.nextLine();
                     try {
-                        deleteCustomer(customerEmailToDelete);
+                        deleteCustomer(Integer.parseInt(customerIdToDelete.trim()));
+                    } catch (NumberFormatException e) {
+                        System.out.println("ID inválido. Por favor, ingrese un número entero.");
                     } catch (SQLException e) {
                         System.out.println("Error al eliminar el cliente: " + e.getMessage());
                     }

@@ -120,68 +120,72 @@ public class SalesService {
             System.out.print("Opción: ");
             String option = scanner.nextLine();
 
-            switch (option) {
-                case "1":
-                    System.out.print("Ingrese el nombre del producto: ");
-                    String soldProductName = scanner.nextLine();
-                    System.out.print("Ingrese la cantidad: ");
-                    int quantity = Integer.parseInt(scanner.nextLine());
-                    System.out.print("Ingrese el método de pago: ");
-                    String customerPaymentMethod = scanner.nextLine();
-                    System.out.print("Ingrese el correo del cliente, en caso de no tener uno, presione enter: ");
-                    String customerEmail = scanner.nextLine();
-                    try {
-                        insertSale(soldProductName, quantity, customerPaymentMethod, customerEmail);
-                    } catch (SQLException e) {
-                        System.out.println("Error al registrar la venta: " + e.getMessage());
-                    }
-                    break;
+            try {
+                switch (option) {
+                    case "1":
+                        System.out.print("Ingrese el nombre del producto: ");
+                        String soldProductName = scanner.nextLine();
+                        System.out.print("Ingrese la cantidad: ");
+                        int quantity = Integer.parseInt(scanner.nextLine());
+                        System.out.print("Ingrese el método de pago: ");
+                        String customerPaymentMethod = scanner.nextLine();
+                        System.out.print("Ingrese el correo del cliente, en caso de no tener uno, presione enter: ");
+                        String customerEmail = scanner.nextLine();
+                        try {
+                            insertSale(soldProductName, quantity, customerPaymentMethod, customerEmail);
+                        } catch (SQLException e) {
+                            System.out.println("Error al registrar la venta: " + e.getMessage());
+                        }
+                        break;
                 
-                case "2":
-                    consultAllSales();
-                    break;
+                    case "2":
+                        consultAllSales();
+                        break;
                 
-                case "3":
-                    System.out.print("Ingrese el nombre del producto: ");
-                    String productNameForSales = scanner.nextLine();
-                    consultSalesByProduct(productNameForSales);
-                    break;
+                    case "3":
+                        System.out.print("Ingrese el nombre del producto: ");
+                        String productNameForSales = scanner.nextLine();
+                        consultSalesByProduct(productNameForSales);
+                        break;
 
-                case "4":
-                    System.out.print("Ingrese el ID de la venta a eliminar: ");
-                    int saleIdToDelete = Integer.parseInt(scanner.nextLine());
-                    try {
-                        deleteSale(saleIdToDelete);
-                    } catch (SQLException e) {
-                        System.out.println("Error al eliminar la venta: " + e.getMessage());
-                    }
-                    break;
+                    case "4":
+                        System.out.print("Ingrese el ID de la venta a eliminar: ");
+                        int saleIdToDelete = Integer.parseInt(scanner.nextLine());
+                        try {
+                            deleteSale(saleIdToDelete);
+                        } catch (SQLException e) {
+                            System.out.println("Error al eliminar la venta: " + e.getMessage());
+                        }
+                        break;
 
-                case "5":
-                    System.out.print("Ingrese el ID de la venta a editar: ");
-                    int saleIdToUpdate = Integer.parseInt(scanner.nextLine());
-                    System.out.print("Ingrese el nombre del producto: ");
-                    String updatedProductName = scanner.nextLine();
-                    System.out.print("Ingrese la cantidad: ");
-                    int updatedQuantity = Integer.parseInt(scanner.nextLine());
-                    System.out.print("Ingrese el método de pago: ");
-                    String updatedPaymentMethod = scanner.nextLine();
-                    System.out.print("Ingrese el correo del cliente, en caso de no tener uno, presione enter: ");
-                    String updatedCustomerEmail = scanner.nextLine();
-                    try {
-                        updateSale(saleIdToUpdate, updatedProductName, updatedQuantity, updatedPaymentMethod, updatedCustomerEmail);
-                    } catch (SQLException e) {
-                        System.out.println("Error al actualizar la venta: " + e.getMessage());
-                    }
-                    break;
+                    case "5":
+                        System.out.print("Ingrese el ID de la venta a editar: ");
+                        int saleIdToUpdate = Integer.parseInt(scanner.nextLine());
+                        System.out.print("Ingrese el nombre del producto: ");
+                        String updatedProductName = scanner.nextLine();
+                        System.out.print("Ingrese la cantidad: ");
+                        int updatedQuantity = Integer.parseInt(scanner.nextLine());
+                        System.out.print("Ingrese el método de pago: ");
+                        String updatedPaymentMethod = scanner.nextLine();
+                        System.out.print("Ingrese el correo del cliente, en caso de no tener uno, presione enter: ");
+                        String updatedCustomerEmail = scanner.nextLine();
+                        try {
+                            updateSale(saleIdToUpdate, updatedProductName, updatedQuantity, updatedPaymentMethod, updatedCustomerEmail);
+                        } catch (SQLException e) {
+                            System.out.println("Error al actualizar la venta: " + e.getMessage());
+                        }
+                        break;
 
-                case "6":
-                    exit = true;
-                    break;
+                    case "6":
+                        exit = true;
+                        break;
                 
-                default:
-                    System.out.println("Opción inválida. Por favor, seleccione una opción válida.");
-                    break;
+                    default:
+                        System.out.println("Opción inválida. Por favor, seleccione una opción válida.");
+                        break;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Valor numérico inválido. Operación cancelada.");
             }
         }
     }

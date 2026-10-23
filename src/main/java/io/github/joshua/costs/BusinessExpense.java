@@ -136,82 +136,86 @@ public class BusinessExpense {
             System.out.print("Opción: ");
             String option = scanner.nextLine();
 
-            switch (option) {
-                case "1":
-                    System.out.print("Ingrese el nombre de la categoría: ");
-                    String categoryName = scanner.nextLine();
-                    System.out.print("Ingrese el nombre del producto (opcional): ");
-                    String productName = scanner.nextLine();
-                    System.out.print("Ingrese el correo del proveedor (opcional): ");
-                    String supplierEmail = scanner.nextLine();
-                    System.out.print("Ingrese la descripción del gasto: ");
-                    String description = scanner.nextLine();
-                    System.out.print("Ingrese el monto del gasto: ");
-                    double amount = Double.parseDouble(scanner.nextLine());
-                    System.out.print("Ingrese el método de pago: ");
-                    String paymentMethod = scanner.nextLine();
-                    System.out.print("Ingrese la cantidad (opcional, presione enter para omitir): ");
-                    String quantityInput = scanner.nextLine().trim();
-                    Integer productQuantity = quantityInput.isEmpty() ? null : Integer.parseInt(quantityInput);
-                    try {
-                        insertExpense(categoryName, productName, supplierEmail, description, amount, paymentMethod, productQuantity);
-                    } catch (SQLException e) {
-                        System.out.println("Error al registrar el gasto: " + e.getMessage());
-                    }
-                    break;
+            try {
+                switch (option) {
+                    case "1":
+                        System.out.print("Ingrese el nombre de la categoría: ");
+                        String categoryName = scanner.nextLine();
+                        System.out.print("Ingrese el nombre del producto (opcional): ");
+                        String productName = scanner.nextLine();
+                        System.out.print("Ingrese el correo del proveedor (opcional): ");
+                        String supplierEmail = scanner.nextLine();
+                        System.out.print("Ingrese la descripción del gasto: ");
+                        String description = scanner.nextLine();
+                        System.out.print("Ingrese el monto del gasto: ");
+                        double amount = Double.parseDouble(scanner.nextLine());
+                        System.out.print("Ingrese el método de pago: ");
+                        String paymentMethod = scanner.nextLine();
+                        System.out.print("Ingrese la cantidad (opcional, presione enter para omitir): ");
+                        String quantityInput = scanner.nextLine().trim();
+                        Integer productQuantity = quantityInput.isEmpty() ? null : Integer.parseInt(quantityInput);
+                        try {
+                            insertExpense(categoryName, productName, supplierEmail, description, amount, paymentMethod, productQuantity);
+                        } catch (SQLException e) {
+                            System.out.println("Error al registrar el gasto: " + e.getMessage());
+                        }
+                        break;
 
-                case "2":
-                    consultAllExpenses();
-                    break;
+                    case "2":
+                        consultAllExpenses();
+                        break;
                 
-                case "3":
-                    System.out.print("Ingrese el nombre del producto: ");
-                    String productNameForExpense = scanner.nextLine();
-                    consultExpenseByProduct(productNameForExpense);
-                    break;
+                    case "3":
+                        System.out.print("Ingrese el nombre del producto: ");
+                        String productNameForExpense = scanner.nextLine();
+                        consultExpenseByProduct(productNameForExpense);
+                        break;
 
-                case "4":
-                    System.out.print("Ingrese el ID del gasto a eliminar: ");
-                    int expenseIdToDelete = Integer.parseInt(scanner.nextLine());
-                    try {
-                        deleteExpense(expenseIdToDelete);
-                    } catch (SQLException e) {
-                        System.out.println("Error al eliminar el gasto: " + e.getMessage());
-                    }
-                    break;
+                    case "4":
+                        System.out.print("Ingrese el ID del gasto a eliminar: ");
+                        int expenseIdToDelete = Integer.parseInt(scanner.nextLine());
+                        try {
+                            deleteExpense(expenseIdToDelete);
+                        } catch (SQLException e) {
+                            System.out.println("Error al eliminar el gasto: " + e.getMessage());
+                        }
+                        break;
 
-                case "5":
-                    System.out.print("Ingrese el ID del gasto a editar: ");
-                    int expenseIdToUpdate = Integer.parseInt(scanner.nextLine());
-                    System.out.print("Ingrese el nombre de la categoría: ");
-                    String updatedCategoryName = scanner.nextLine();
-                    System.out.print("Ingrese el nombre del producto (opcional): ");
-                    String updatedProductName = scanner.nextLine();
-                    System.out.print("Ingrese el correo del proveedor (opcional): ");
-                    String updatedSupplierEmail = scanner.nextLine();
-                    System.out.print("Ingrese la descripción del gasto: ");
-                    String updatedDescription = scanner.nextLine();
-                    System.out.print("Ingrese el monto del gasto: ");
-                    double updatedAmount = Double.parseDouble(scanner.nextLine());
-                    System.out.print("Ingrese el método de pago: ");
-                    String updatedPaymentMethod = scanner.nextLine();
-                    System.out.print("Ingrese la cantidad (opcional, presione enter para omitir): ");
-                    String updatedQuantityInput = scanner.nextLine().trim();
-                    Integer updatedQuantity = updatedQuantityInput.isEmpty() ? null : Integer.parseInt(updatedQuantityInput);
-                    try {
-                        updateExpense(expenseIdToUpdate, updatedCategoryName, updatedProductName, updatedSupplierEmail, updatedDescription, updatedAmount, updatedPaymentMethod, updatedQuantity);
-                    } catch (SQLException e) {
-                        System.out.println("Error al actualizar el gasto: " + e.getMessage());
-                    }
-                    break;
+                    case "5":
+                        System.out.print("Ingrese el ID del gasto a editar: ");
+                        int expenseIdToUpdate = Integer.parseInt(scanner.nextLine());
+                        System.out.print("Ingrese el nombre de la categoría: ");
+                        String updatedCategoryName = scanner.nextLine();
+                        System.out.print("Ingrese el nombre del producto (opcional): ");
+                        String updatedProductName = scanner.nextLine();
+                        System.out.print("Ingrese el correo del proveedor (opcional): ");
+                        String updatedSupplierEmail = scanner.nextLine();
+                        System.out.print("Ingrese la descripción del gasto: ");
+                        String updatedDescription = scanner.nextLine();
+                        System.out.print("Ingrese el monto del gasto: ");
+                        double updatedAmount = Double.parseDouble(scanner.nextLine());
+                        System.out.print("Ingrese el método de pago: ");
+                        String updatedPaymentMethod = scanner.nextLine();
+                        System.out.print("Ingrese la cantidad (opcional, presione enter para omitir): ");
+                        String updatedQuantityInput = scanner.nextLine().trim();
+                        Integer updatedQuantity = updatedQuantityInput.isEmpty() ? null : Integer.parseInt(updatedQuantityInput);
+                        try {
+                            updateExpense(expenseIdToUpdate, updatedCategoryName, updatedProductName, updatedSupplierEmail, updatedDescription, updatedAmount, updatedPaymentMethod, updatedQuantity);
+                        } catch (SQLException e) {
+                            System.out.println("Error al actualizar el gasto: " + e.getMessage());
+                        }
+                        break;
 
-                case "6":
-                    exit = true;
-                    break;
+                    case "6":
+                        exit = true;
+                        break;
                 
-                default:
-                    System.out.println("Opción inválida. Por favor, seleccione una opción válida.");
-                    break;
+                    default:
+                        System.out.println("Opción inválida. Por favor, seleccione una opción válida.");
+                        break;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Valor numérico inválido. Operación cancelada.");
             }
         }
     }
