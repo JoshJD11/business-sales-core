@@ -13,16 +13,19 @@ import io.github.joshua.sales.SalesService;
 import io.github.joshua.supplier.SupplierService;
 import io.github.joshua.util.AppSettings;
 import io.github.joshua.util.QueryResult;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Window;
 
 import java.util.List;
 import java.util.Map;
@@ -77,7 +80,7 @@ public class DashboardController {
     @FXML private void filterCurrent() {
         if (currentTable == null) return;
         if (currentTable.equals("Dim_Supplier")) {
-            ChoiceDialog<String> mode = new ChoiceDialog<>("Correo", "Correo", "Nombre de producto");
+            ChoiceDialog<String> mode = centered(new ChoiceDialog<>("Correo", "Correo", "Nombre de producto"));
             mode.setTitle("Filtrar Proveedores");
             mode.setHeaderText("Elige uno de los filtros disponibles en SupplierService");
             mode.setContentText("Buscar por:");
@@ -91,7 +94,7 @@ public class DashboardController {
             case "Dim_ExpenseCategory" -> "nombre de categoría";
             default -> "filtro";
         };
-        TextInputDialog dialog = new TextInputDialog();
+        TextInputDialog dialog = centered(new TextInputDialog());
         dialog.setTitle("Filtrar " + LABELS.get(currentTable));
         dialog.setHeaderText("Consulta disponible en el servicio de " + LABELS.get(currentTable));
         dialog.setContentText("Escribe el " + filterLabel + ":");
@@ -99,7 +102,7 @@ public class DashboardController {
     }
 
     private void showFilterValueDialog(String mode) {
-        TextInputDialog dialog = new TextInputDialog();
+        TextInputDialog dialog = centered(new TextInputDialog());
         dialog.setTitle("Filtrar Proveedores");
         dialog.setHeaderText("Consulta disponible en SupplierService");
         dialog.setContentText("Correo".equals(mode) ? "Escribe el correo:" : "Escribe el nombre del producto:");
@@ -154,7 +157,7 @@ public class DashboardController {
     }
 
     @FXML private void openSqlConsole() {
-        Dialog<ButtonType> dialog = new Dialog<>(); dialog.setTitle("Consulta SQL personalizada"); dialog.setHeaderText("Ejecuta consultas de lectura o mantenimiento no destructivo");
+        Dialog<ButtonType> dialog = centered(new Dialog<>()); dialog.setTitle("Consulta SQL personalizada"); dialog.setHeaderText("Ejecuta consultas de lectura o mantenimiento no destructivo");
         TextArea sql = new TextArea(); sql.setPromptText("SELECT TOP 20 * FROM Dim_Product"); sql.setPrefRowCount(8); sql.setPrefColumnCount(70);
         VBox content = new VBox(10, new Label("Consulta SQL"), sql); content.setPadding(new Insets(10)); dialog.getDialogPane().setContent(content);
         ButtonType run = new ButtonType("Ejecutar", ButtonBar.ButtonData.OK_DONE); dialog.getDialogPane().getButtonTypes().addAll(run, ButtonType.CANCEL);
@@ -162,7 +165,7 @@ public class DashboardController {
     }
 
     @FXML private void resetDatabase() {
-        TextInputDialog dialog = new TextInputDialog(); dialog.setTitle("Vaciar base de datos"); dialog.setHeaderText("Esta acción eliminará todos los registros de todas las tablas. La estructura se conserva."); dialog.setContentText("Escribe CONFIRMAR para continuar:");
+        TextInputDialog dialog = centered(new TextInputDialog()); dialog.setTitle("Vaciar base de datos"); dialog.setHeaderText("Esta acción eliminará todos los registros de todas las tablas. La estructura se conserva."); dialog.setContentText("Escribe CONFIRMAR para continuar:");
         dialog.showAndWait().ifPresent(value -> {
             if (!"CONFIRMAR".equals(value)) { notifyUser(Alert.AlertType.WARNING, "Operación cancelada", "La confirmación debe ser exactamente CONFIRMAR."); return; }
             Task<Void> task = new Task<>() { protected Void call() throws Exception { resetService.resetDatabaseConfirmed(); return null; } };
@@ -321,7 +324,7 @@ public class DashboardController {
     private static TableData readTable(QueryResult result) { List<String> names = result.columns(); ObservableList<TableColumn<ObservableList<String>, String>> columns = FXCollections.observableArrayList(); for (int i = 0; i < names.size(); i++) { int index = i; TableColumn<ObservableList<String>, String> column = new TableColumn<>(names.get(i)); column.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().get(index))); column.setMinWidth(90); column.setPrefWidth(150); columns.add(column); } ObservableList<ObservableList<String>> rows = FXCollections.observableArrayList(); for (List<String> sourceRow : result.rows()) rows.add(FXCollections.observableArrayList(sourceRow)); return new TableData(names, columns, rows); }
     private GridPane formGrid(List<String> labels) { GridPane grid = new GridPane(); grid.setHgap(10); grid.setVgap(10); grid.setPadding(new Insets(10)); for (int i = 0; i < labels.size(); i++) { grid.add(new Label(labels.get(i)), 0, i); grid.add(new TextField(), 1, i); } return grid; }
     private List<TextField> fieldsOf(GridPane grid) { return grid.getChildren().stream().filter(node -> node instanceof TextField).map(node -> (TextField) node).toList(); }
-    private boolean showForm(String title, GridPane grid) { Dialog<ButtonType> dialog = new Dialog<>(); dialog.setTitle(title); dialog.getDialogPane().setContent(grid); ButtonType save = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE); dialog.getDialogPane().getButtonTypes().addAll(save, ButtonType.CANCEL); return dialog.showAndWait().orElse(ButtonType.CANCEL) == save; }
+    private boolean showForm(String title, GridPane grid) { Dialog<ButtonType> dialog = centered(new Dialog<>()); dialog.setTitle(title); dialog.getDialogPane().setContent(grid); ButtonType save = new ButtonType("Guardar", ButtonBar.ButtonData.OK_DONE); dialog.getDialogPane().getButtonTypes().addAll(save, ButtonType.CANCEL); return dialog.showAndWait().orElse(ButtonType.CANCEL) == save; }
     private void setTableActions(String table) {
         boolean canCreate = List.of("Dim_Product", "Dim_Customer", "Dim_Supplier", "Dim_ExpenseCategory", "Fact_Sales", "Fact_MaterialExpenses").contains(table);
         boolean canEdit = List.of("Dim_Product", "Dim_Customer", "Dim_Supplier", "Dim_ExpenseCategory", "Inventory", "Fact_Sales", "Fact_MaterialExpenses").contains(table);
@@ -369,9 +372,22 @@ public class DashboardController {
         tableContent.getStyleClass().setAll("table-content");
         if (loading) tableContent.getStyleClass().add("table-content-loading");
     }
-    private boolean confirm(String title, String message) { Alert alert = new Alert(Alert.AlertType.CONFIRMATION, message, ButtonType.CANCEL, ButtonType.OK); alert.setTitle(title); return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK; }
+    private boolean confirm(String title, String message) { Alert alert = centered(new Alert(Alert.AlertType.CONFIRMATION, message, ButtonType.CANCEL, ButtonType.OK)); alert.setTitle(title); return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK; }
     private void showError(Throwable error) { notifyUser(Alert.AlertType.ERROR, "No se pudo completar la operación", error == null ? "Error desconocido" : error.getMessage()); }
-    private void notifyUser(Alert.AlertType type, String title, String message) { Alert alert = new Alert(type); alert.setTitle(title); alert.setHeaderText(null); alert.setContentText(message); alert.show(); }
+    private void notifyUser(Alert.AlertType type, String title, String message) { Alert alert = centered(new Alert(type)); alert.setTitle(title); alert.setHeaderText(null); alert.setContentText(message); alert.show(); }
+    // Owned by the main window and centered on it, with the cursor already in the first field.
+    private <T extends Dialog<?>> T centered(T dialog) {
+        Window owner = dataTable.getScene().getWindow();
+        dialog.initOwner(owner);
+        dialog.setOnShown(event -> {
+            Window window = dialog.getDialogPane().getScene().getWindow();
+            window.setX(owner.getX() + (owner.getWidth() - window.getWidth()) / 2);
+            window.setY(owner.getY() + (owner.getHeight() - window.getHeight()) / 2);
+            Node firstInput = dialog.getDialogPane().lookup(".text-input");
+            if (firstInput != null) Platform.runLater(firstInput::requestFocus);
+        });
+        return dialog;
+    }
     @FunctionalInterface private interface ServiceAction { void run() throws Exception; }
     private record TableData(List<String> columnNames, ObservableList<TableColumn<ObservableList<String>, String>> columns, ObservableList<ObservableList<String>> rows) { }
 }
